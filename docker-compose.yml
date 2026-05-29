@@ -1,0 +1,13 @@
+services:
+  genetic-algorithm-cli:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["ga", "10"]
+
+  genetic-algorithm-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8080:8080"
