@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>genetic-algorithm</AssemblyName>
+    <RootNamespace>GeneticAlgorithm.Cli</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GeneticAlgorithm.Application\GeneticAlgorithm.Application.csproj" />
+  </ItemGroup>
+
+</Project>
