@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
-using System.Threading.Tasks;
-using GeneticAlgorithm.Application;
+using System.Text.Json;
+using System.Threading.Tasks;using GeneticAlgorithm.Application;
 using GeneticAlgorithm.Application.Models;
 using GeneticAlgorithm.Core.Simulation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -91,7 +91,37 @@ namespace GeneticAlgorithm.IntegrationTests
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
             Assert.IsNotNull(body);
-            StringAssert.Contains(body.Error, "LoadingDistribution");
+            StringAssert.Contains(body.Error, "loadingDistribution");
+        }
+
+        [TestMethod]
+        public async Task GeneticAlgorithm_ReturnsBadRequest_WhenTruckLoadVolumeMissing()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            var request = IntegrationTestFixtures.CreateSmallOptimizationRequest();
+            request.Simulation.TruckLoadVolume = 0;
+
+            var response = await client.PostAsJsonAsync("/api/genetic-algorithm", request);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            Assert.IsNotNull(body);
+            Assert.AreEqual("truckLoadVolume must be positive.", body.Error);
+        }
+
+        [TestMethod]
+        public async Task Simulation_ReturnsBadRequest_WhenTruckLoadVolumeMissing()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            SimulationRequest request = IntegrationTestFixtures.CreateSmallSimulation();
+            request.TruckLoadVolume = 0;
+
+            var response = await client.PostAsJsonAsync("/api/simulation", request);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            Assert.IsNotNull(body);
+            Assert.AreEqual("truckLoadVolume must be positive.", body.Error);
         }
 
         [TestMethod]
@@ -126,6 +156,27 @@ namespace GeneticAlgorithm.IntegrationTests
 
             var response = await client.PostAsync("/api/genetic-search", content);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExhaustiveSearch_AcceptsFlatSimulationFieldsAtRoot()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            SimulationRequest simulation = DemoRequests.CreateSimulation();
+            using var content = new StringContent(
+                JsonSerializer.Serialize(simulation, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PostAsync("/api/exhaustive-search", content);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            OptimizationRunResponse body = await response.Content.ReadFromJsonAsync<OptimizationRunResponse>();
+            IntegrationTestFixtures.AssertOptimizationResponse(body, OptimizationPhaseDisplay.ExhaustiveSearch, "Phase1");
         }
     }
 }

@@ -9,7 +9,7 @@ namespace GeneticAlgorithm.Cli
         private static int Main(string[] args)
         {
             if (args.Length > 0)
-                return ExecuteCommand(args);
+                return ExecuteCommand(args, interactiveShell: false);
 
             return RunInteractiveShell();
         }
@@ -17,7 +17,8 @@ namespace GeneticAlgorithm.Cli
         private static int RunInteractiveShell()
         {
             Console.WriteLine($"{OptimizationPhaseDisplay.ApplicationTitle} (interactive CLI)");
-            Console.WriteLine("Same tabs as the desktop app. Type 'help' for commands and options.");
+            Console.WriteLine("Same tabs as the desktop app and HTTP API. Type 'help' for all commands.");
+            Console.WriteLine($"At {OptimizationPhaseDisplay.CliPrompt}type commands directly — no \"{CliCatalog.ExecutableName}\" prefix.");
             Console.WriteLine("Type 'exit' or press Ctrl+C to quit.");
             Console.WriteLine();
 
@@ -43,7 +44,7 @@ namespace GeneticAlgorithm.Cli
                     return 0;
 
                 string[] commandArgs = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                ExecuteCommand(commandArgs);
+                ExecuteCommand(commandArgs, interactiveShell: true);
                 Console.WriteLine();
             }
         }
@@ -61,48 +62,42 @@ namespace GeneticAlgorithm.Cli
             }
         }
 
-        private static int ExecuteCommand(string[] args)
+        private static int ExecuteCommand(string[] args, bool interactiveShell)
         {
             try
             {
-                switch (args[0].ToLowerInvariant())
+                if (!CliCatalog.TryResolve(args[0], out string command, out CliCommandInfo commandInfo))
+                {
+                    Console.Error.WriteLine($"Unknown command '{args[0]}'. Type 'help' for available commands.");
+                    return 1;
+                }
+
+                if (commandInfo.InteractiveOnly && !interactiveShell)
+                {
+                    Console.Error.WriteLine($"'{command}' is only available in the interactive shell.");
+                    return 1;
+                }
+
+                switch (command)
                 {
                     case "help":
-                    case "-h":
-                    case "--help":
-                    case "?":
                         CliHelp.Print();
                         return 0;
-                    case "sim":
-                    case "simulate":
                     case "simulation":
                         return RunSimulation(ParseOptions(args));
                     case "genetic-algorithm":
-                    case "genetic-algo":
-                    case "ga":
-                    case "genetic":
                         return RunGeneticAlgorithm(ParseOptions(args));
-                    case "exhaustive":
                     case "exhaustive-search":
-                    case "phase1":
                         return RunOptimizationPhase(OptimizationPhase.Phase1, ParseOptions(args), defaultGenerations: 1);
                     case "genetic-search":
-                    case "optimize":
-                    case "phase2":
                         return RunOptimizationPhase(OptimizationPhase.Phase2, ParseOptions(args), defaultGenerations: 50);
-                    case "surrogate":
                     case "surrogate-search":
-                    case "phase3":
                         return RunOptimizationPhase(OptimizationPhase.Phase3, ParseOptions(args), defaultGenerations: 1);
-                    case "dp":
-                    case "dynamic-programming":
                     case "dynamic-programming-search":
-                    case "phase4":
                         return RunOptimizationPhase(OptimizationPhase.Phase4, ParseOptions(args), defaultGenerations: 1);
                     case "demo":
                         return RunOptimizationPhase(OptimizationPhase.Phase2, ParseOptions(args), defaultGenerations: 20);
                     case "clear":
-                    case "cls":
                         Console.Clear();
                         return 0;
                     default:

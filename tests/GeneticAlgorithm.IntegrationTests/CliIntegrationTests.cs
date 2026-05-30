@@ -12,6 +12,10 @@ namespace GeneticAlgorithm.IntegrationTests
             CliRunResult result = CliProcessRunner.Run("help");
 
             Assert.AreEqual(0, result.ExitCode);
+            StringAssert.Contains(result.StandardOutput, "ALL COMMANDS");
+            StringAssert.Contains(result.StandardOutput, "QUICK START");
+            StringAssert.Contains(result.StandardOutput, "--load-per-truck");
+            StringAssert.Contains(result.StandardOutput, "POST /api/exhaustive-search");
             StringAssert.Contains(result.StandardOutput, "genetic-algorithm");
             StringAssert.Contains(result.StandardOutput, OptimizationPhaseDisplay.GeneticAlgorithmTab);
             StringAssert.Contains(result.StandardOutput, "simulation");
@@ -19,6 +23,7 @@ namespace GeneticAlgorithm.IntegrationTests
             StringAssert.Contains(result.StandardOutput, "genetic-search");
             StringAssert.Contains(result.StandardOutput, "surrogate-search");
             StringAssert.Contains(result.StandardOutput, "dynamic-programming-search");
+            StringAssert.Contains(result.StandardOutput, "TEMPLATE: exhaustive-search");
         }
 
         [TestMethod]
@@ -128,7 +133,7 @@ namespace GeneticAlgorithm.IntegrationTests
             CliRunResult result = CliProcessRunner.RunCommand("simulation", "--trucks 0");
 
             Assert.AreEqual(1, result.ExitCode);
-            StringAssert.Contains(result.StandardError, "trucks, loaders, and scalers must be positive");
+            StringAssert.Contains(result.StandardError, "truckCount must be positive");
         }
     }
 }

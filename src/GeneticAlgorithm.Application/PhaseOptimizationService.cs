@@ -437,12 +437,14 @@ namespace GeneticAlgorithm.Application
         /// </summary>
         public static string TryValidateRequest(GeneticOptimizationRequest request)
         {
-            const int maxDistributionEntries = 100;
-
             if (request == null)
                 return "Request body is required.";
             if (request.Simulation == null)
-                return "simulation is required.";
+                return "simulation is required. Nest simulation fields inside \"simulation\", or send them at the root (coalVolume, truckLoadVolume, truckCount, ...). See GET /api/sample/optimization-request.";
+
+            string simulationError = SimulationRequestValidator.TryValidate(request.Simulation);
+            if (simulationError != null)
+                return simulationError;
 
             try
             {
@@ -463,27 +465,6 @@ namespace GeneticAlgorithm.Application
                     request.MaxTrucks,
                     request.MaxLoaders,
                     request.MaxScalers);
-
-                string distributionError = ValidateDistributionCount(
-                    request.Simulation.LoadingDistribution,
-                    nameof(request.Simulation.LoadingDistribution),
-                    maxDistributionEntries);
-                if (distributionError != null)
-                    return distributionError;
-
-                distributionError = ValidateDistributionCount(
-                    request.Simulation.WeighingDistribution,
-                    nameof(request.Simulation.WeighingDistribution),
-                    maxDistributionEntries);
-                if (distributionError != null)
-                    return distributionError;
-
-                distributionError = ValidateDistributionCount(
-                    request.Simulation.TravelingDistribution,
-                    nameof(request.Simulation.TravelingDistribution),
-                    maxDistributionEntries);
-                if (distributionError != null)
-                    return distributionError;
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -493,20 +474,6 @@ namespace GeneticAlgorithm.Application
             {
                 return ex.Message;
             }
-
-            return null;
-        }
-
-        private static string ValidateDistributionCount(
-            System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>> distribution,
-            string name,
-            int maxEntries)
-        {
-            if (distribution == null)
-                return null;
-
-            if (distribution.Count > maxEntries)
-                return $"{name} cannot exceed {maxEntries} entries.";
 
             return null;
         }

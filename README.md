@@ -18,12 +18,17 @@ dotnet build GeneticAlgorithm.sln
 dotnet test GeneticAlgorithm.sln
 
 # Cross-platform CLI (Linux/macOS/Windows)
-dotnet run --project src/GeneticAlgorithm.Cli -- ga 20
-dotnet run --project src/GeneticAlgorithm.Cli -- sim
+dotnet run --project src/GeneticAlgorithm.Cli
+# At truck-fleet> prompt: help | simulation | exhaustive-search | genetic-algorithm | genetic-search | ...
 
-# HTTP API
+dotnet run --project src/GeneticAlgorithm.Cli -- simulation --coal 10000 --trucks 6 --load-per-truck 20
+dotnet run --project src/GeneticAlgorithm.Cli -- exhaustive-search --max-trucks 6 --max-loaders 2 --max-scalers 2
+
+# HTTP API (Visual Studio HTTPS profile)
 dotnet run --project src/GeneticAlgorithm.Api
-# POST http://localhost:5000/api/simulation  (see docs/ARCHITECTURE.md)
+# https://localhost:7190/  — docs + GET /api/endpoints
+# http://localhost:5296/   — HTTP profile
+# Docker: http://localhost:8080/
 
 # Windows GUI only
 dotnet run --project src/GeneticAlgorithm.Desktop
@@ -39,6 +44,29 @@ docker compose -f docker-compose.yml up --build genetic-algorithm-api
 ```
 
 API exposed on port **8080**.
+
+---
+
+## CLI (`truck-fleet-problem`)
+
+Same desktop tabs as the WinForms app and the HTTP API.
+
+| Command | Desktop tab | API route |
+|---------|-------------|-----------|
+| `simulation` | Simulation | `POST /api/simulation` |
+| `genetic-algorithm` | Genetic Algorithm | `POST /api/genetic-algorithm` |
+| `exhaustive-search` | Exhaustive Search | `POST /api/exhaustive-search` |
+| `genetic-search` | Genetic Search | `POST /api/genetic-search` |
+| `surrogate-search` | Surrogate Search | `POST /api/surrogate-search` |
+| `dynamic-programming-search` | Dynamic Programming Search | `POST /api/dynamic-programming-search` |
+
+**Interactive shell** (no arguments): type commands at `truck-fleet>` — do **not** prefix with `truck-fleet-problem`.
+
+**One-shot** (scripts): `truck-fleet-problem simulation --coal 10000 --load-per-truck 20 ...`
+
+**Required flags:** include `--load-per-truck` (demo default `20`) and positive `--trucks`, `--loaders`, `--scalers`.
+
+Type **`help`** at the prompt for full options, aliases, and copy-paste templates.
 
 ---
 

@@ -22,6 +22,8 @@ app.MapGet("/health", () => Results.Ok(new
     application = OptimizationPhaseDisplay.ApplicationTitle
 }));
 
+app.MapGet("/api/endpoints", () => Results.Ok(ApiCatalog.BuildJsonResponse()));
+
 app.MapGet("/api/sample/simulation-request", () =>
     Results.Ok(DemoRequests.CreateSimulation()));
 
@@ -30,6 +32,10 @@ app.MapGet("/api/sample/optimization-request", () =>
 
 app.MapPost("/api/simulation", (SimulationRequest request, SimulationService service) =>
 {
+    string error = SimulationRequestValidator.TryValidate(request);
+    if (error != null)
+        return Results.BadRequest(new { error });
+
     var output = service.Run(request);
     return Results.Ok(output);
 });

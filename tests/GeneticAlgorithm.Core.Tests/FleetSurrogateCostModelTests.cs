@@ -100,9 +100,12 @@ namespace GeneticAlgorithm.Core.Tests
             new SimulationRequest
             {
                 CoalVolume = 10000,
+                TruckCount = 6,
                 TruckLoadVolume = 20,
                 TruckCostPerDay = 1000,
+                LoaderCount = 2,
                 LoaderCostPerDay = 2000,
+                ScalerCount = 2,
                 ScalerCostPerDay = 3000,
                 ProjectDurationDays = 120,
                 DelayCostPerDay = 10000,

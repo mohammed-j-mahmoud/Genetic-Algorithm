@@ -137,10 +137,9 @@ namespace GeneticAlgorithm.Cli
 
         private static void ValidateSimulation(SimulationRequest request)
         {
-            if (request.CoalVolume < 0)
-                throw new ArgumentOutOfRangeException(nameof(request.CoalVolume), "coal must be zero or greater.");
-            if (request.TruckCount <= 0 || request.LoaderCount <= 0 || request.ScalerCount <= 0)
-                throw new ArgumentOutOfRangeException("Fleet counts", "trucks, loaders, and scalers must be positive.");
+            string error = SimulationRequestValidator.TryValidate(request);
+            if (error != null)
+                throw new ArgumentException(error);
         }
 
         private static void ValidateOptimization(GeneticOptimizationRequest request)

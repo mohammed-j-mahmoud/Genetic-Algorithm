@@ -118,9 +118,36 @@ namespace GeneticAlgorithm.IntegrationTests
             using var client = factory.CreateClient();
             string html = await client.GetStringAsync("/");
             StringAssert.Contains(html, "maxTrucks");
+            StringAssert.Contains(html, "truckLoadVolume");
             StringAssert.Contains(html, "simulation");
             StringAssert.Contains(html, "/api/genetic-algorithm");
             StringAssert.Contains(html, "/api/exhaustive-search");
+            StringAssert.Contains(html, "/api/endpoints");
+            StringAssert.Contains(html, "Postman / curl only");
+        }
+
+        [TestMethod]
+        public async Task EndpointsCatalog_ReturnsAllRoutes()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            var response = await client.GetAsync("/api/endpoints");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            string json = await response.Content.ReadAsStringAsync();
+            StringAssert.Contains(json, "/api/simulation");
+            StringAssert.Contains(json, "/api/genetic-algorithm");
+            StringAssert.Contains(json, "/api/exhaustive-search");
+            StringAssert.Contains(json, "/api/dynamic-programming-search");
+            StringAssert.Contains(json, "https://localhost:7190");
+        }
+
+        [TestMethod]
+        public async Task SampleSimulationRequest_ReturnsOk()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            var response = await client.GetAsync("/api/sample/simulation-request");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
         [TestMethod]
