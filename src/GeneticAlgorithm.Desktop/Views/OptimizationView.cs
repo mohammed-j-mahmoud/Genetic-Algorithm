@@ -112,10 +112,10 @@ namespace GeneticAlgorithm.Desktop
                 return false;
             if (!FormInputParser.TryParseInt(txtGaGenerations.Text, "Generation count", out int lastGeneration, showErrors))
                 return false;
-            if (lastGeneration > 100_000)
+            if (lastGeneration > SimulationParameters.MaxParameterValue)
             {
                 if (showErrors)
-                    MessageBox.Show("Generation count cannot exceed 100,000.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"Generation count cannot exceed {SimulationParameters.MaxParameterValue:N0}.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             if (!FormInputParser.TryParseMutationRate(txtGaMutationRate.Text, out double mutationRate, showErrors))
@@ -128,10 +128,10 @@ namespace GeneticAlgorithm.Desktop
                     MessageBox.Show($"Max trucks, loaders, and scalers cannot exceed {SimulationParameters.MaxResourceCount}.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (populationSize > 10_000)
+            if (populationSize > SimulationParameters.MaxParameterValue)
             {
                 if (showErrors)
-                    MessageBox.Show("Population size cannot exceed 10,000.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"Population size cannot exceed {SimulationParameters.MaxParameterValue:N0}.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
 
@@ -503,6 +503,18 @@ namespace GeneticAlgorithm.Desktop
                 return false;
             if (!FormInputParser.TryParseFloat(txtSimDelayCostPerDay.Text, "Cost of delay", out float costOfDelay))
                 return false;
+
+            if (numTruck > SimulationParameters.MaxResourceCount
+                || numLoader > SimulationParameters.MaxResourceCount
+                || numScaler > SimulationParameters.MaxResourceCount)
+            {
+                MessageBox.Show(
+                    $"Truck, loader, and scaler counts cannot exceed {SimulationParameters.MaxResourceCount:N0}.",
+                    "Invalid input",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
+            }
 
             inputs.NumCoal = numCoal;
             inputs.NumTruck = numTruck;

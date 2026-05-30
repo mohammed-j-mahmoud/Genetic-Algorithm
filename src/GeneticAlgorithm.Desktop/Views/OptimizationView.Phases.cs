@@ -133,11 +133,11 @@ namespace GeneticAlgorithm.Desktop
 
             _phase3Panel = CreatePhasePanel(
                 OptimizationPhaseDisplay.SurrogateSearch,
-                "Fastest search — surrogate cost formula ranks combos, then verify finalists.",
-                "• Search: analytical surrogate model (no discrete-event simulation)" + Environment.NewLine +
-                "• Ranks all combinations in milliseconds" + Environment.NewLine +
+                "Surrogate search — expected-time ranking for normal bounds, formula fallback for huge grids.",
+                "• Search: expected-time simulation + cache when combos ≤ 50,000 (same model as Exhaustive/DP)" + Environment.NewLine +
+                "• Large bounds: pipelined surrogate formula (loader/scaler/truck bottlenecks, 480-min work days)" + Environment.NewLine +
                 "• Final step: parallel seeded stochastic verify on top 5 candidates" + Environment.NewLine +
-                "• Best when: very large bounds; trust final verify, not surrogate rank alone",
+                "• Best when: you want top-5 verify instead of verifying only the single best combo",
                 OptimizationPhase.Phase3);
 
             _phase4Panel = CreatePhasePanel(

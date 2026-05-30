@@ -135,18 +135,19 @@ Three tables (Loading, Weighing, Traveling) list **Time (min)** and **Probabilit
 
 ### Tab: Surrogate Search
 
-**Purpose:** Fastest search for very large bounds.
+**Purpose:** Rank every fleet combo, then stochastic-verify the **top 5** (unlike Exhaustive/DP, which verify only the single best).
 
 | Step | Method |
 |------|--------|
-| Search | Analytical **surrogate** formula (no full simulation while ranking) |
+| Search (≤ 50,000 combos) | Expected-time simulation + cache — **same ranking model as Exhaustive Search and DP** |
+| Search (> 50,000 combos) | Improved **pipelined surrogate formula** (loader/scaler/truck bottlenecks, 480-minute work days) |
 | Final step | Parallel seeded stochastic verify on **top 5** candidates |
 
-**Best when:** Very large max bounds. Trust the **final verify**, not the surrogate rank alone.
+**Best when:** You want the same ranking as exhaustive on normal bounds, but prefer verifying several finalists instead of one.
 
 **Actions:** **Run Surrogate Search** · **Stop**
 
-**When stopped early:** Shows the best combo from combinations ranked so far (surrogate metrics).
+**When stopped early:** Shows the best combo from combinations ranked so far.
 
 ---
 
@@ -160,7 +161,7 @@ Three tables (Loading, Weighing, Traveling) list **Time (min)** and **Probabilit
 | During search | Expected-time discrete-event simulation + cache (same model as Exhaustive Search, not the surrogate formula) |
 | Final step | One seeded stochastic verify on the DP optimum |
 
-**Not the same as Surrogate Search:** Surrogate uses a fast **approximate formula** and skips simulation while ranking. DP uses the **full expected-time simulator** for every cell and guarantees the best expected-time solution when the table completes.
+**Not the same as Surrogate Search:** DP always uses the **full expected-time simulator** and guarantees the best expected-time solution when the table completes. Surrogate Search uses the same simulator for ranking when the search space is small (≤ 50,000 combos); above that it falls back to a fast approximate formula.
 
 **Actions:** **Run Dynamic Programming Search** · **Stop**
 
@@ -175,7 +176,7 @@ Three tables (Loading, Weighing, Traveling) list **Time (min)** and **Probabilit
 | Genetic Algorithm | Evolution + stochastic sim | Medium | Built into search (cached) |
 | Exhaustive Search | Every combo | Slowest if bounds are large | 1× stochastic on best |
 | Genetic Search | Evolution + expected-time | Fast | Top 5 stochastic |
-| Surrogate Search | Formula only | Fastest | Top 5 stochastic |
+| Surrogate Search | Expected-time sim (small bounds) or pipelined formula (huge bounds) | Fast | Top 5 stochastic |
 | Dynamic Programming Search | 3D DP + expected-time sim | Same work as exhaustive* | 1× stochastic on best |
 
 \*DP evaluates the same number of fleet combos as exhaustive search, but builds an explicit optimal substructure table instead of a flat loop.

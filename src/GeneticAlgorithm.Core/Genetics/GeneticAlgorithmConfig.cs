@@ -73,8 +73,8 @@ namespace GeneticAlgorithm.Core.Genetics
                 throw new ArgumentOutOfRangeException(nameof(maxLoaders), $"Max loaders cannot exceed {SimulationParameters.MaxResourceCount}.");
             if (maxScalers > SimulationParameters.MaxResourceCount)
                 throw new ArgumentOutOfRangeException(nameof(maxScalers), $"Max scalers cannot exceed {SimulationParameters.MaxResourceCount}.");
-            if (populationSize > 10_000)
-                throw new ArgumentOutOfRangeException(nameof(populationSize), "Population size cannot exceed 10,000.");
+            if (populationSize > SimulationParameters.MaxParameterValue)
+                throw new ArgumentOutOfRangeException(nameof(populationSize), $"Population size cannot exceed {SimulationParameters.MaxParameterValue:N0}.");
             if (numCoal < 0)
                 throw new ArgumentOutOfRangeException(nameof(numCoal), "Coal volume cannot be negative.");
             if (mutationRate < 0 || mutationRate > 1)

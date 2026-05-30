@@ -81,8 +81,8 @@ namespace GeneticAlgorithm.Core.Genetics
         {
             if (_hasRun)
                 throw new InvalidOperationException("This genetic algorithm runner can only be started once.");
-            if (generations <= 0 || generations > 10_000)
-                throw new ArgumentOutOfRangeException(nameof(generations), "Generations must be between 1 and 10,000.");
+            if (generations <= 0 || generations > SimulationParameters.MaxParameterValue)
+                throw new ArgumentOutOfRangeException(nameof(generations), $"Generations must be between 1 and {SimulationParameters.MaxParameterValue:N0}.");
 
             _hasRun = true;
 

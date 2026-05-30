@@ -17,6 +17,8 @@ namespace GeneticAlgorithm.Application
     {
         private const int VerifyTopCount = 5;
         private const double FitnessScale = 1000.0;
+        /// <summary>When combos are at or below this count, rank with expected-time simulation (same model as exhaustive/DP).</summary>
+        private const int ExpectedTimeRankingComboLimit = 50_000;
 
         private readonly SimulationEvaluator _evaluator = new SimulationEvaluator();
 
@@ -128,7 +130,8 @@ namespace GeneticAlgorithm.Application
         }
 
         /// <summary>
-        /// Phase 3: surrogate cost ranking over all combos, then parallel seeded stochastic verify on top candidates.
+        /// Phase 3: rank all combos (expected-time simulation when the search space is small, otherwise
+        /// pipelined surrogate formula), then parallel seeded stochastic verify on top candidates.
         /// </summary>
         public OptimizationRunResult RunPhase3(
             GeneticOptimizationRequest request,
@@ -138,7 +141,137 @@ namespace GeneticAlgorithm.Application
             ValidateRequest(request);
             int runSeed = Environment.TickCount;
             SimulationRequest sim = request.Simulation;
+            int total = request.MaxTrucks * request.MaxLoaders * request.MaxScalers;
+            bool useExpectedTimeRanking = total <= ExpectedTimeRankingComboLimit;
 
+            List<(int trucks, int loaders, int scalers, double fitness)> ranked;
+            long simulationCalls;
+            long cacheHits;
+            string rankingSummary;
+
+            if (useExpectedTimeRanking)
+            {
+                ranked = RankCombinationsWithExpectedTime(
+                    request,
+                    runSeed,
+                    progress,
+                    cancellationToken,
+                    out simulationCalls,
+                    out cacheHits,
+                    out int evaluated);
+                rankingSummary =
+                    $"Expected-time ranking ({evaluated} combos, cached) + top {VerifyTopCount} seeded stochastic verify.";
+            }
+            else
+            {
+                ranked = RankCombinationsWithSurrogate(request, sim, progress, cancellationToken, out int evaluated);
+                simulationCalls = 0;
+                cacheHits = 0;
+                rankingSummary =
+                    $"Surrogate formula ranking ({evaluated} combos, large search space) + top {VerifyTopCount} seeded stochastic verify.";
+            }
+
+            var topTuples = ranked
+                .OrderByDescending(r => r.fitness)
+                .Take(VerifyTopCount)
+                .ToList();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                DNA partialBest = topTuples.Count == 0
+                    ? new DNA()
+                    : CreateRankedDna(topTuples[0], sim);
+
+                return new OptimizationRunResult
+                {
+                    Phase = OptimizationPhase.Phase3,
+                    BestGeneration = 1,
+                    GenerationsCompleted = 1,
+                    StoppedEarly = true,
+                    BestChromosome = partialBest,
+                    CombinationsEvaluated = ranked.Count,
+                    SimulationCalls = simulationCalls,
+                    CacheHits = cacheHits,
+                    MethodSummary = $"Stopped early during ranking ({ranked.Count} of {total} combinations)."
+                };
+            }
+
+            var candidateDnas = topTuples
+                .Select(r => CreateRankedDna(r, sim))
+                .ToList();
+
+            DNA best = VerifyCandidates(sim, candidateDnas, runSeed);
+
+            return new OptimizationRunResult
+            {
+                Phase = OptimizationPhase.Phase3,
+                BestGeneration = 1,
+                GenerationsCompleted = 1,
+                BestChromosome = best,
+                CombinationsEvaluated = total,
+                SimulationCalls = simulationCalls + candidateDnas.Count,
+                CacheHits = cacheHits,
+                MethodSummary = rankingSummary
+            };
+        }
+
+        private List<(int trucks, int loaders, int scalers, double fitness)> RankCombinationsWithExpectedTime(
+            GeneticOptimizationRequest request,
+            int runSeed,
+            IProgress<int> progress,
+            CancellationToken cancellationToken,
+            out long simulationCalls,
+            out long cacheHits,
+            out int evaluated)
+        {
+            var cache = new SimulationFitnessCache(
+                (trucks, loaders, scalers) =>
+                    FitnessSnapshot.FromSimulation(
+                        _evaluator.Evaluate(
+                            request.Simulation,
+                            trucks,
+                            loaders,
+                            scalers,
+                            SimulationEvaluationMode.ExpectedTimes,
+                            runSeed),
+                        request.Simulation.CoalVolume,
+                        FitnessScale),
+                request.MaxTrucks,
+                request.MaxLoaders,
+                request.MaxScalers);
+
+            cache.Prewarm();
+
+            var ranked = new List<(int trucks, int loaders, int scalers, double fitness)>();
+            int total = request.MaxTrucks * request.MaxLoaders * request.MaxScalers;
+            evaluated = 0;
+
+            for (int trucks = 1; trucks <= request.MaxTrucks && !cancellationToken.IsCancellationRequested; trucks++)
+            {
+                for (int loaders = 1; loaders <= request.MaxLoaders && !cancellationToken.IsCancellationRequested; loaders++)
+                {
+                    for (int scalers = 1; scalers <= request.MaxScalers && !cancellationToken.IsCancellationRequested; scalers++)
+                    {
+                        evaluated++;
+                        FitnessSnapshot snapshot = cache.GetOrEvaluate(trucks, loaders, scalers);
+                        ranked.Add((trucks, loaders, scalers, snapshot.Fitness));
+                        progress?.Report(evaluated * 100 / Math.Max(1, total));
+                    }
+                }
+            }
+
+            simulationCalls = cache.SimulationCalls;
+            cacheHits = cache.CacheHits;
+            return ranked;
+        }
+
+        private static List<(int trucks, int loaders, int scalers, double fitness)> RankCombinationsWithSurrogate(
+            GeneticOptimizationRequest request,
+            SimulationRequest sim,
+            IProgress<int> progress,
+            CancellationToken cancellationToken,
+            out int evaluated)
+        {
             var loading = DiscreteDistribution.FromEntries(
                 DistributionNormalizer.Normalize(sim.LoadingDistribution),
                 DiscreteDistribution.DefaultLoading);
@@ -151,7 +284,7 @@ namespace GeneticAlgorithm.Application
 
             var ranked = new List<(int trucks, int loaders, int scalers, double fitness)>();
             int total = request.MaxTrucks * request.MaxLoaders * request.MaxScalers;
-            int evaluated = 0;
+            evaluated = 0;
 
             for (int trucks = 1; trucks <= request.MaxTrucks && !cancellationToken.IsCancellationRequested; trucks++)
             {
@@ -182,50 +315,7 @@ namespace GeneticAlgorithm.Application
                 }
             }
 
-            var topTuples = ranked
-                .OrderByDescending(r => r.fitness)
-                .Take(VerifyTopCount)
-                .ToList();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                DNA partialBest = topTuples.Count == 0
-                    ? new DNA()
-                    : CreateRankedDna(topTuples[0], sim);
-
-                return new OptimizationRunResult
-                {
-                    Phase = OptimizationPhase.Phase3,
-                    BestGeneration = 1,
-                    GenerationsCompleted = 1,
-                    StoppedEarly = true,
-                    BestChromosome = partialBest,
-                    CombinationsEvaluated = evaluated,
-                    SimulationCalls = 0,
-                    CacheHits = 0,
-                    MethodSummary =
-                        $"Stopped early after ranking {evaluated} of {total} combinations (surrogate best shown)."
-                };
-            }
-
-            var candidateDnas = topTuples
-                .Select(r => CreateRankedDna(r, sim))
-                .ToList();
-
-            DNA best = VerifyCandidates(sim, candidateDnas, runSeed);
-
-            return new OptimizationRunResult
-            {
-                Phase = OptimizationPhase.Phase3,
-                BestGeneration = 1,
-                GenerationsCompleted = 1,
-                BestChromosome = best,
-                CombinationsEvaluated = total,
-                SimulationCalls = candidateDnas.Count,
-                CacheHits = 0,
-                MethodSummary =
-                    $"Surrogate ranking ({total} combos, no DES) + top {candidateDnas.Count} seeded stochastic verify."
-            };
+            return ranked;
         }
 
         /// <summary>
@@ -282,7 +372,10 @@ namespace GeneticAlgorithm.Application
         private static DNA CreateRankedDna((int trucks, int loaders, int scalers, double fitness) ranked, SimulationRequest sim)
         {
             var dna = new DNA();
-            dna.CopyFrom(ranked.trucks, ranked.loaders, ranked.scalers,
+            dna.CopyFrom(
+                ranked.trucks,
+                ranked.loaders,
+                ranked.scalers,
                 FitnessSnapshot.FromRank(ranked.fitness, sim.CoalVolume, FitnessScale),
                 sim.CoalVolume);
             return dna;

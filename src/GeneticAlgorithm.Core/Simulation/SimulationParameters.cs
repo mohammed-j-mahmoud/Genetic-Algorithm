@@ -8,8 +8,11 @@ namespace GeneticAlgorithm.Core.Simulation
     /// </summary>
     public sealed class SimulationParameters
     {
+        /// <summary>Upper bound for numeric parameters (fleet counts, population, generations).</summary>
+        public const int MaxParameterValue = 100_000;
+
         /// <summary>Maximum trucks, loaders, or scales allowed per simulation run.</summary>
-        public const int MaxResourceCount = 100_000;
+        public const int MaxResourceCount = MaxParameterValue;
 
         /// <summary>Total coal volume to move (m³).</summary>
         public float CoalVolume { get; }
