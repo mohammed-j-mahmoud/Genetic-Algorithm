@@ -2,6 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
+using GeneticAlgorithm.Core.Optimization;
 
 namespace GeneticAlgorithm.Core.Genetics
 {
@@ -59,20 +61,21 @@ namespace GeneticAlgorithm.Core.Genetics
                 : GetOrEvaluateSparse(trucks, loaders, scalers);
         }
 
-        public void Prewarm()
+        public void Prewarm(CancellationToken cancellationToken = default)
         {
             long cells = (long)_maxTrucks * _maxLoaders * _maxScalers;
             if (cells > MaxPrewarmCells)
                 return;
 
-            for (int trucks = 1; trucks <= _maxTrucks; trucks++)
-            {
-                for (int loaders = 1; loaders <= _maxLoaders; loaders++)
+            Parallel.For(
+                0,
+                (int)cells,
+                new ParallelOptions { CancellationToken = cancellationToken },
+                index =>
                 {
-                    for (int scalers = 1; scalers <= _maxScalers; scalers++)
-                        GetOrEvaluate(trucks, loaders, scalers);
-                }
-            }
+                    FleetCombinationIndex.Decode(index, _maxTrucks, _maxLoaders, _maxScalers, out int trucks, out int loaders, out int scalers);
+                    GetOrEvaluate(trucks, loaders, scalers);
+                });
         }
 
         private void ValidateGeneBounds(int trucks, int loaders, int scalers)
@@ -88,33 +91,41 @@ namespace GeneticAlgorithm.Core.Genetics
         private FitnessSnapshot GetOrEvaluateDense(int trucks, int loaders, int scalers)
         {
             int index = ToDenseIndex(trucks, loaders, scalers);
-            if (_denseCache.TryGetValue(index, out FitnessSnapshot existing))
+            while (true)
             {
-                Interlocked.Increment(ref _cacheHits);
-                return existing;
-            }
+                if (_denseCache.TryGetValue(index, out FitnessSnapshot existing))
+                {
+                    Interlocked.Increment(ref _cacheHits);
+                    return existing;
+                }
 
-            return _denseCache.GetOrAdd(index, _ =>
-            {
-                Interlocked.Increment(ref _simulationCalls);
-                return _evaluate(trucks, loaders, scalers);
-            });
+                FitnessSnapshot computed = _evaluate(trucks, loaders, scalers);
+                if (_denseCache.TryAdd(index, computed))
+                {
+                    Interlocked.Increment(ref _simulationCalls);
+                    return computed;
+                }
+            }
         }
 
         private FitnessSnapshot GetOrEvaluateSparse(int trucks, int loaders, int scalers)
         {
             long key = PackKey(trucks, loaders, scalers);
-            if (_sparseCache.TryGetValue(key, out FitnessSnapshot existing))
+            while (true)
             {
-                Interlocked.Increment(ref _cacheHits);
-                return existing;
-            }
+                if (_sparseCache.TryGetValue(key, out FitnessSnapshot existing))
+                {
+                    Interlocked.Increment(ref _cacheHits);
+                    return existing;
+                }
 
-            return _sparseCache.GetOrAdd(key, _ =>
-            {
-                Interlocked.Increment(ref _simulationCalls);
-                return _evaluate(trucks, loaders, scalers);
-            });
+                FitnessSnapshot computed = _evaluate(trucks, loaders, scalers);
+                if (_sparseCache.TryAdd(key, computed))
+                {
+                    Interlocked.Increment(ref _simulationCalls);
+                    return computed;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

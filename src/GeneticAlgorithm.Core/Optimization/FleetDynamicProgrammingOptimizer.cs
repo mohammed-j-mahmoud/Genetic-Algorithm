@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using GeneticAlgorithm.Core.Genetics;
 using GeneticAlgorithm.Core.Simulation;
 
@@ -82,47 +83,65 @@ namespace GeneticAlgorithm.Core.Optimization
             }
 
             int evaluated = 0;
+            int lastReportedPercent = 0;
             DNA globalBest = new DNA();
             double globalBestFitness = double.MinValue;
+            object bestLock = new object();
+            var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
+            int minSum = 3;
+            int maxSum = maxTrucks + maxLoaders + maxScalers;
 
-            for (int trucks = 1; trucks <= maxTrucks && !cancellationToken.IsCancellationRequested; trucks++)
+            try
             {
-                for (int loaders = 1; loaders <= maxLoaders && !cancellationToken.IsCancellationRequested; loaders++)
+                for (int sum = minSum; sum <= maxSum; sum++)
                 {
-                    for (int scalers = 1; scalers <= maxScalers && !cancellationToken.IsCancellationRequested; scalers++)
+                    Parallel.For(1, maxTrucks + 1, parallelOptions, trucks =>
                     {
-                        evaluated++;
-                        FitnessSnapshot snapshot = _cache.GetOrEvaluate(trucks, loaders, scalers);
-                        double fitness = snapshot.Fitness;
-
-                        dp[trucks, loaders, scalers] = fitness;
-                        bestTrucks[trucks, loaders, scalers] = trucks;
-                        bestLoaders[trucks, loaders, scalers] = loaders;
-                        bestScalers[trucks, loaders, scalers] = scalers;
-                        bestSnapshot[trucks, loaders, scalers] = snapshot;
-
-                        ConsiderPredecessor(
-                            dp, bestTrucks, bestLoaders, bestScalers, bestSnapshot,
-                            trucks, loaders, scalers, trucks - 1, loaders, scalers);
-                        ConsiderPredecessor(
-                            dp, bestTrucks, bestLoaders, bestScalers, bestSnapshot,
-                            trucks, loaders, scalers, trucks, loaders - 1, scalers);
-                        ConsiderPredecessor(
-                            dp, bestTrucks, bestLoaders, bestScalers, bestSnapshot,
-                            trucks, loaders, scalers, trucks, loaders, scalers - 1);
-
-                        if (dp[trucks, loaders, scalers] > globalBestFitness)
+                        for (int loaders = 1; loaders <= maxLoaders; loaders++)
                         {
-                            globalBestFitness = dp[trucks, loaders, scalers];
-                            int bt = bestTrucks[trucks, loaders, scalers];
-                            int bl = bestLoaders[trucks, loaders, scalers];
-                            int bs = bestScalers[trucks, loaders, scalers];
-                            globalBest.CopyFrom(bt, bl, bs, bestSnapshot[trucks, loaders, scalers], _config.NumCoal);
-                        }
+                            int scalers = sum - trucks - loaders;
+                            if (scalers < 1 || scalers > maxScalers)
+                                continue;
 
-                        progress?.Report(evaluated * 100 / Math.Max(1, total));
-                    }
+                            FitnessSnapshot snapshot = _cache.GetOrEvaluate(trucks, loaders, scalers);
+                            double fitness = snapshot.Fitness;
+
+                            dp[trucks, loaders, scalers] = fitness;
+                            bestTrucks[trucks, loaders, scalers] = trucks;
+                            bestLoaders[trucks, loaders, scalers] = loaders;
+                            bestScalers[trucks, loaders, scalers] = scalers;
+                            bestSnapshot[trucks, loaders, scalers] = snapshot;
+
+                            ConsiderPredecessor(
+                                dp, bestTrucks, bestLoaders, bestScalers, bestSnapshot,
+                                trucks, loaders, scalers, trucks - 1, loaders, scalers);
+                            ConsiderPredecessor(
+                                dp, bestTrucks, bestLoaders, bestScalers, bestSnapshot,
+                                trucks, loaders, scalers, trucks, loaders - 1, scalers);
+                            ConsiderPredecessor(
+                                dp, bestTrucks, bestLoaders, bestScalers, bestSnapshot,
+                                trucks, loaders, scalers, trucks, loaders, scalers - 1);
+
+                            double cellFitness = dp[trucks, loaders, scalers];
+                            lock (bestLock)
+                            {
+                                if (cellFitness > globalBestFitness)
+                                {
+                                    globalBestFitness = cellFitness;
+                                    int bt = bestTrucks[trucks, loaders, scalers];
+                                    int bl = bestLoaders[trucks, loaders, scalers];
+                                    int bs = bestScalers[trucks, loaders, scalers];
+                                    globalBest.CopyFrom(bt, bl, bs, bestSnapshot[trucks, loaders, scalers], _config.NumCoal);
+                                }
+                            }
+
+                            ParallelProgress.ReportCompletion(progress, ref evaluated, ref lastReportedPercent, total);
+                        }
+                    });
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
 
             CombinationsEvaluated = evaluated;

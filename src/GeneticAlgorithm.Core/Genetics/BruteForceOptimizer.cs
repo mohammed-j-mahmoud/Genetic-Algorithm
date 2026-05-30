@@ -1,5 +1,7 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using GeneticAlgorithm.Core.Optimization;
 using GeneticAlgorithm.Core.Simulation;
 
 namespace GeneticAlgorithm.Core.Genetics
@@ -52,25 +54,42 @@ namespace GeneticAlgorithm.Core.Genetics
             DNA best = new DNA();
             double bestFitness = double.MinValue;
             int evaluated = 0;
-            int total = _config.MaxTrucks * _config.MaxLoaders * _config.MaxScalers;
+            int lastReportedPercent = 0;
+            int total = FleetCombinationIndex.TotalCombinations(
+                _config.MaxTrucks,
+                _config.MaxLoaders,
+                _config.MaxScalers);
+            object bestLock = new object();
+            var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
 
-            for (int trucks = 1; trucks <= _config.MaxTrucks && !cancellationToken.IsCancellationRequested; trucks++)
+            try
             {
-                for (int loaders = 1; loaders <= _config.MaxLoaders && !cancellationToken.IsCancellationRequested; loaders++)
+                Parallel.For(0, total, parallelOptions, index =>
                 {
-                    for (int scalers = 1; scalers <= _config.MaxScalers && !cancellationToken.IsCancellationRequested; scalers++)
+                    FleetCombinationIndex.Decode(
+                        index,
+                        _config.MaxTrucks,
+                        _config.MaxLoaders,
+                        _config.MaxScalers,
+                        out int trucks,
+                        out int loaders,
+                        out int scalers);
+
+                    FitnessSnapshot snapshot = _cache.GetOrEvaluate(trucks, loaders, scalers);
+                    lock (bestLock)
                     {
-                        evaluated++;
-                        FitnessSnapshot snapshot = _cache.GetOrEvaluate(trucks, loaders, scalers);
                         if (snapshot.Fitness > bestFitness)
                         {
                             bestFitness = snapshot.Fitness;
                             best.CopyFrom(trucks, loaders, scalers, snapshot, _config.NumCoal);
                         }
-
-                        progress?.Report(evaluated * 100 / Math.Max(1, total));
                     }
-                }
+
+                    ParallelProgress.ReportCompletion(progress, ref evaluated, ref lastReportedPercent, total);
+                });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
 
             CombinationsEvaluated = evaluated;

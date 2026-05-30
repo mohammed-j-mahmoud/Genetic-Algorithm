@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -44,7 +45,7 @@ namespace GeneticAlgorithm.Application
                         scalers,
                         SimulationEvaluationMode.ExpectedTimes,
                         runSeed),
-                prewarmCache: true);
+                prewarmCache: false);
 
             DNA bestExpected = optimizer.Run(progress, cancellationToken);
             bool stoppedEarly = cancellationToken.IsCancellationRequested;
@@ -240,29 +241,42 @@ namespace GeneticAlgorithm.Application
                 request.MaxLoaders,
                 request.MaxScalers);
 
-            cache.Prewarm();
+            var ranked = new ConcurrentBag<(int trucks, int loaders, int scalers, double fitness)>();
+            int total = FleetCombinationIndex.TotalCombinations(
+                request.MaxTrucks,
+                request.MaxLoaders,
+                request.MaxScalers);
+            int evaluatedCount = 0;
+            int lastReportedPercent = 0;
+            var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
 
-            var ranked = new List<(int trucks, int loaders, int scalers, double fitness)>();
-            int total = request.MaxTrucks * request.MaxLoaders * request.MaxScalers;
-            evaluated = 0;
-
-            for (int trucks = 1; trucks <= request.MaxTrucks && !cancellationToken.IsCancellationRequested; trucks++)
+            try
             {
-                for (int loaders = 1; loaders <= request.MaxLoaders && !cancellationToken.IsCancellationRequested; loaders++)
+                Parallel.For(0, total, parallelOptions, index =>
                 {
-                    for (int scalers = 1; scalers <= request.MaxScalers && !cancellationToken.IsCancellationRequested; scalers++)
-                    {
-                        evaluated++;
-                        FitnessSnapshot snapshot = cache.GetOrEvaluate(trucks, loaders, scalers);
-                        ranked.Add((trucks, loaders, scalers, snapshot.Fitness));
-                        progress?.Report(evaluated * 100 / Math.Max(1, total));
-                    }
-                }
+                    FleetCombinationIndex.Decode(
+                        index,
+                        request.MaxTrucks,
+                        request.MaxLoaders,
+                        request.MaxScalers,
+                        out int trucks,
+                        out int loaders,
+                        out int scalers);
+
+                    FitnessSnapshot snapshot = cache.GetOrEvaluate(trucks, loaders, scalers);
+                    ranked.Add((trucks, loaders, scalers, snapshot.Fitness));
+
+                    ParallelProgress.ReportCompletion(progress, ref evaluatedCount, ref lastReportedPercent, total);
+                });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
 
             simulationCalls = cache.SimulationCalls;
             cacheHits = cache.CacheHits;
-            return ranked;
+            evaluated = evaluatedCount;
+            return ranked.ToList();
         }
 
         private static List<(int trucks, int loaders, int scalers, double fitness)> RankCombinationsWithSurrogate(
@@ -282,40 +296,54 @@ namespace GeneticAlgorithm.Application
                 DistributionNormalizer.Normalize(sim.TravelingDistribution),
                 DiscreteDistribution.DefaultTraveling);
 
-            var ranked = new List<(int trucks, int loaders, int scalers, double fitness)>();
-            int total = request.MaxTrucks * request.MaxLoaders * request.MaxScalers;
-            evaluated = 0;
+            var ranked = new ConcurrentBag<(int trucks, int loaders, int scalers, double fitness)>();
+            int total = FleetCombinationIndex.TotalCombinations(
+                request.MaxTrucks,
+                request.MaxLoaders,
+                request.MaxScalers);
+            int evaluatedCount = 0;
+            int lastReportedPercent = 0;
+            var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
 
-            for (int trucks = 1; trucks <= request.MaxTrucks && !cancellationToken.IsCancellationRequested; trucks++)
+            try
             {
-                for (int loaders = 1; loaders <= request.MaxLoaders && !cancellationToken.IsCancellationRequested; loaders++)
+                Parallel.For(0, total, parallelOptions, index =>
                 {
-                    for (int scalers = 1; scalers <= request.MaxScalers && !cancellationToken.IsCancellationRequested; scalers++)
-                    {
-                        evaluated++;
-                        double cost = FleetSurrogateCostModel.EstimateTotalCost(
-                            sim.CoalVolume,
-                            sim.TruckLoadVolume,
-                            sim.TruckCostPerDay,
-                            sim.LoaderCostPerDay,
-                            sim.ScalerCostPerDay,
-                            sim.ProjectDurationDays,
-                            sim.DelayCostPerDay,
-                            loading,
-                            weighing,
-                            traveling,
-                            trucks,
-                            loaders,
-                            scalers);
-                        double fitness = FleetSurrogateCostModel.EstimateFitness(sim.CoalVolume, FitnessScale, cost);
-                        ranked.Add((trucks, loaders, scalers, fitness));
+                    FleetCombinationIndex.Decode(
+                        index,
+                        request.MaxTrucks,
+                        request.MaxLoaders,
+                        request.MaxScalers,
+                        out int trucks,
+                        out int loaders,
+                        out int scalers);
 
-                        progress?.Report(evaluated * 100 / Math.Max(1, total));
-                    }
-                }
+                    double cost = FleetSurrogateCostModel.EstimateTotalCost(
+                        sim.CoalVolume,
+                        sim.TruckLoadVolume,
+                        sim.TruckCostPerDay,
+                        sim.LoaderCostPerDay,
+                        sim.ScalerCostPerDay,
+                        sim.ProjectDurationDays,
+                        sim.DelayCostPerDay,
+                        loading,
+                        weighing,
+                        traveling,
+                        trucks,
+                        loaders,
+                        scalers);
+                    double fitness = FleetSurrogateCostModel.EstimateFitness(sim.CoalVolume, FitnessScale, cost);
+                    ranked.Add((trucks, loaders, scalers, fitness));
+
+                    ParallelProgress.ReportCompletion(progress, ref evaluatedCount, ref lastReportedPercent, total);
+                });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
 
-            return ranked;
+            evaluated = evaluatedCount;
+            return ranked.ToList();
         }
 
         /// <summary>
@@ -340,7 +368,7 @@ namespace GeneticAlgorithm.Application
                         scalers,
                         SimulationEvaluationMode.ExpectedTimes,
                         runSeed),
-                prewarmCache: true);
+                prewarmCache: false);
 
             DNA bestExpected = optimizer.Run(progress, cancellationToken);
             bool stoppedEarly = cancellationToken.IsCancellationRequested;
