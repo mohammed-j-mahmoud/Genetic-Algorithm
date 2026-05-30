@@ -8,7 +8,8 @@ namespace GeneticAlgorithm.Application.Json
 {
     /// <summary>
     /// Accepts optimization JSON either nested ({ "simulation": { ... } }) or flat
-    /// (simulation fields at the root, as users often paste from the simulation sample).
+    /// (economics at the root with maxTrucks/maxLoaders/maxScalers).
+    /// truckCount/loaderCount/scalerCount are optional on search routes and ignored by optimizers.
     /// </summary>
     public sealed class GeneticOptimizationRequestJsonConverter : JsonConverter<GeneticOptimizationRequest>
     {

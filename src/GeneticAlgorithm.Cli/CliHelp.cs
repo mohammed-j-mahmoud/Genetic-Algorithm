@@ -50,17 +50,28 @@ namespace GeneticAlgorithm.Cli
             CliOutput.WriteBlankLine();
 
             CliOutput.WriteLine("REQUIRED OPTIONS");
-            CliOutput.WriteLine("  Simulation and search commands need positive fleet counts and --load-per-truck.");
-            CliOutput.WriteLine($"  Demo defaults apply when omitted: coal={Fmt(sim.CoalVolume)}, load-per-truck={Fmt(sim.TruckLoadVolume)},");
-            CliOutput.WriteLine($"  trucks={Fmt(sim.TruckCount)}, loaders={Fmt(sim.LoaderCount)}, scalers={Fmt(sim.ScalerCount)}.");
+            CliOutput.WriteLine("  simulation — needs --trucks, --loaders, --scalers, and --load-per-truck.");
+            CliOutput.WriteLine("  search commands — need --max-trucks, --max-loaders, --max-scalers, and --load-per-truck.");
+            CliOutput.WriteLine("    (Search does not use --trucks/--loaders/--scalers — same as WinForms GA inputs.)");
+            CliOutput.WriteLine($"  Demo defaults when omitted: coal={Fmt(sim.CoalVolume)}, load-per-truck={Fmt(sim.TruckLoadVolume)}.");
             CliOutput.WriteLine("  Distributions use desktop demo values unless changed in the API or Distribution tab.");
             CliOutput.WriteBlankLine();
 
-            CliOutput.WriteLine("SIMULATION OPTIONS (--flags on simulation or any search command)");
+            CliOutput.WriteLine("SIMULATION-ONLY OPTIONS (simulation command — fixed fleet size)");
             CliOutput.WriteLine($"  --coal, -c <float>           Amount of material (default demo: {Fmt(sim.CoalVolume)})");
-            CliOutput.WriteLine("  --trucks, -t <float>         Number of trucks for the simulation run");
+            CliOutput.WriteLine("  --trucks, -t <float>         Number of trucks for this run");
             CliOutput.WriteLine("  --loaders, -l <float>        Number of loaders");
             CliOutput.WriteLine("  --scalers, -s <float>        Number of scalers");
+            CliOutput.WriteLine($"  --load-per-truck <float>     Load per truck — required (default demo: {Fmt(sim.TruckLoadVolume)})");
+            CliOutput.WriteLine($"  --truck-cost <float>         Cost per truck per day (default demo: {Fmt(sim.TruckCostPerDay)})");
+            CliOutput.WriteLine($"  --loader-cost <float>        Cost per loader per day (default demo: {Fmt(sim.LoaderCostPerDay)})");
+            CliOutput.WriteLine($"  --scaler-cost <float>        Cost per scaler per day (default demo: {Fmt(sim.ScalerCostPerDay)})");
+            CliOutput.WriteLine($"  --project-days <float>       Project duration in days (default demo: {Fmt(sim.ProjectDurationDays)})");
+            CliOutput.WriteLine($"  --delay-cost <float>         Cost of delay per day (default demo: {Fmt(sim.DelayCostPerDay)})");
+            CliOutput.WriteBlankLine();
+
+            CliOutput.WriteLine("SEARCH CONTEXT (search commands — economics only, same as WinForms GA tab)");
+            CliOutput.WriteLine($"  --coal, -c <float>           Amount of material (default demo: {Fmt(sim.CoalVolume)})");
             CliOutput.WriteLine($"  --load-per-truck <float>     Load per truck — required (default demo: {Fmt(sim.TruckLoadVolume)})");
             CliOutput.WriteLine($"  --truck-cost <float>         Cost per truck per day (default demo: {Fmt(sim.TruckCostPerDay)})");
             CliOutput.WriteLine($"  --loader-cost <float>        Cost per loader per day (default demo: {Fmt(sim.LoaderCostPerDay)})");

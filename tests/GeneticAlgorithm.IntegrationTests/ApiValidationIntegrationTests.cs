@@ -159,7 +159,23 @@ namespace GeneticAlgorithm.IntegrationTests
         }
 
         [TestMethod]
-        public async Task ExhaustiveSearch_AcceptsFlatSimulationFieldsAtRoot()
+        public async Task DynamicProgrammingSearch_AcceptsFlatSearchContextWithoutFleetCounts()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            const string json =
+                "{\"maxTrucks\":2,\"maxLoaders\":2,\"maxScalers\":2," +
+                "\"coalVolume\":40,\"truckLoadVolume\":20,\"truckCostPerDay\":100," +
+                "\"loaderCostPerDay\":200,\"scalerCostPerDay\":300," +
+                "\"projectDurationDays\":30,\"delayCostPerDay\":50}";
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("/api/dynamic-programming-search", content);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExhaustiveSearch_AcceptsLegacySimulationShapeAtRoot()
         {
             using var factory = IntegrationTestFixtures.CreateApiFactory();
             using var client = factory.CreateClient();

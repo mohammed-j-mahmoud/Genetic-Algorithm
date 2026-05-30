@@ -140,6 +140,9 @@ namespace GeneticAlgorithm.IntegrationTests
             Assert.AreEqual(expected.Generations, sample.Generations);
             Assert.AreEqual(expected.MaxTrucks, sample.MaxTrucks);
             Assert.AreEqual(expected.Simulation.CoalVolume, sample.Simulation.CoalVolume);
+            Assert.AreEqual(0f, sample.Simulation.TruckCount);
+            Assert.AreEqual(0f, sample.Simulation.LoaderCount);
+            Assert.AreEqual(0f, sample.Simulation.ScalerCount);
         }
     }
 }

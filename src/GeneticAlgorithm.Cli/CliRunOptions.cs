@@ -11,7 +11,7 @@ namespace GeneticAlgorithm.Cli
         public GeneticOptimizationRequest BuildOptimizationRequest(int defaultGenerations)
         {
             var request = DemoRequests.CreateOptimization(defaultGenerations);
-            ApplySimulationOverrides(request.Simulation);
+            ApplySearchContextOverrides(request.Simulation);
             ApplyOptimizationOverrides(request, defaultGenerations);
             ValidateOptimization(request);
             return request;
@@ -50,9 +50,7 @@ namespace GeneticAlgorithm.Cli
         {
             var parts = new StringBuilder("inputs: demo defaults");
             Append(parts, "coal", _coal);
-            Append(parts, "trucks", _trucks);
-            Append(parts, "loaders", _loaders);
-            Append(parts, "scalers", _scalers);
+            Append(parts, "load-per-truck", _loadPerTruck);
             Append(parts, "max-trucks", _maxTrucks);
             Append(parts, "max-loaders", _maxLoaders);
             Append(parts, "max-scalers", _maxScalers);
@@ -93,16 +91,10 @@ namespace GeneticAlgorithm.Cli
             builder.Append(", ").Append(name).Append('=').Append(value);
         }
 
-        private void ApplySimulationOverrides(SimulationRequest simulation)
+        private void ApplySearchContextOverrides(SimulationRequest simulation)
         {
             if (TryParseFloat(_coal, out float coal))
                 simulation.CoalVolume = coal;
-            if (TryParseFloat(_trucks, out float trucks))
-                simulation.TruckCount = trucks;
-            if (TryParseFloat(_loaders, out float loaders))
-                simulation.LoaderCount = loaders;
-            if (TryParseFloat(_scalers, out float scalers))
-                simulation.ScalerCount = scalers;
             if (TryParseFloat(_loadPerTruck, out float loadPerTruck))
                 simulation.TruckLoadVolume = loadPerTruck;
             if (TryParseFloat(_truckCost, out float truckCost))
@@ -115,6 +107,17 @@ namespace GeneticAlgorithm.Cli
                 simulation.ProjectDurationDays = projectDays;
             if (TryParseFloat(_delayCost, out float delayCost))
                 simulation.DelayCostPerDay = delayCost;
+        }
+
+        private void ApplySimulationOverrides(SimulationRequest simulation)
+        {
+            ApplySearchContextOverrides(simulation);
+            if (TryParseFloat(_trucks, out float trucks))
+                simulation.TruckCount = trucks;
+            if (TryParseFloat(_loaders, out float loaders))
+                simulation.LoaderCount = loaders;
+            if (TryParseFloat(_scalers, out float scalers))
+                simulation.ScalerCount = scalers;
         }
 
         private void ApplyOptimizationOverrides(GeneticOptimizationRequest request, int defaultGenerations)

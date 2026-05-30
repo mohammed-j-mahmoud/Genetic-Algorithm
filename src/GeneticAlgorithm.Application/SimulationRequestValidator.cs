@@ -7,11 +7,23 @@ namespace GeneticAlgorithm.Application
     /// Validates simulation inputs before API, CLI, or optimizer runs.
     /// Mirrors <see cref="SimulationParameters"/> rules so WinForms, CLI, and API stay aligned.
     /// </summary>
+    public enum SimulationValidationKind
+    {
+        /// <summary>Single simulation run — fleet counts are required (Simulation tab / POST /api/simulation).</summary>
+        SingleRun,
+
+        /// <summary>Search context — fleet sizes come from the optimizer; only economics and load-per-truck are required.</summary>
+        SearchContext
+    }
+
     public static class SimulationRequestValidator
     {
         private const int MaxDistributionEntries = 100;
 
-        public static string TryValidate(SimulationRequest request)
+        public static string TryValidate(SimulationRequest request) =>
+            TryValidate(request, SimulationValidationKind.SingleRun);
+
+        public static string TryValidate(SimulationRequest request, SimulationValidationKind kind)
         {
             if (request == null)
                 return "simulation is required.";
@@ -23,18 +35,22 @@ namespace GeneticAlgorithm.Application
                 return "Daily costs cannot be negative.";
             if (request.ProjectDurationDays < 0)
                 return "projectDurationDays cannot be negative.";
-            if (request.TruckCount <= 0)
-                return "truckCount must be positive.";
             if (request.TruckLoadVolume <= 0)
                 return "truckLoadVolume must be positive.";
-            if (request.LoaderCount < 1)
-                return "loaderCount must be at least 1.";
-            if (request.ScalerCount < 1)
-                return "scalerCount must be at least 1.";
-            if (request.TruckCount > SimulationParameters.MaxResourceCount
-                || request.LoaderCount > SimulationParameters.MaxResourceCount
-                || request.ScalerCount > SimulationParameters.MaxResourceCount)
-                return $"Resource counts exceed the allowed maximum ({SimulationParameters.MaxResourceCount}).";
+
+            if (kind == SimulationValidationKind.SingleRun)
+            {
+                if (request.TruckCount <= 0)
+                    return "truckCount must be positive.";
+                if (request.LoaderCount < 1)
+                    return "loaderCount must be at least 1.";
+                if (request.ScalerCount < 1)
+                    return "scalerCount must be at least 1.";
+                if (request.TruckCount > SimulationParameters.MaxResourceCount
+                    || request.LoaderCount > SimulationParameters.MaxResourceCount
+                    || request.ScalerCount > SimulationParameters.MaxResourceCount)
+                    return $"Resource counts exceed the allowed maximum ({SimulationParameters.MaxResourceCount}).";
+            }
 
             string distributionError = ValidateDistributionCount(
                 request.LoadingDistribution, "loadingDistribution", MaxDistributionEntries);

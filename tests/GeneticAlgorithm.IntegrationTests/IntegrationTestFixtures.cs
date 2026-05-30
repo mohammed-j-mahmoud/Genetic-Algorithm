@@ -30,12 +30,12 @@ namespace GeneticAlgorithm.IntegrationTests
 
         internal const string CliQuickOptimizationFlags =
             "--generations 3 --population 4 --max-trucks 2 --max-loaders 2 --max-scalers 2 " +
-            "--coal 40 --trucks 2 --loaders 1 --scalers 1 --load-per-truck 20 --truck-cost 100 " +
+            "--coal 40 --load-per-truck 20 --truck-cost 100 " +
             "--loader-cost 200 --scaler-cost 300 --project-days 30 --delay-cost 50";
 
         internal const string CliPhaseGridFlags =
             "--generations 3 --population 4 --max-trucks 2 --max-loaders 2 --max-scalers 2 " +
-            "--coal 80 --trucks 2 --loaders 1 --scalers 1 --load-per-truck 20 --truck-cost 100 " +
+            "--coal 80 --load-per-truck 20 --truck-cost 100 " +
             "--loader-cost 200 --scaler-cost 300 --project-days 30 --delay-cost 50";
 
         // ── WebApplicationFactory ─────────────────────────────────────────────────────
@@ -61,6 +61,18 @@ namespace GeneticAlgorithm.IntegrationTests
                 DelayCostPerDay = 50
             };
 
+        public static SimulationRequest CreateSmallSearchSimulation() =>
+            new SimulationRequest
+            {
+                CoalVolume = 40,
+                TruckLoadVolume = 20,
+                TruckCostPerDay = 100,
+                LoaderCostPerDay = 200,
+                ScalerCostPerDay = 300,
+                ProjectDurationDays = 30,
+                DelayCostPerDay = 50
+            };
+
         public static GeneticOptimizationRequest CreateSmallOptimizationRequest() =>
             new GeneticOptimizationRequest
             {
@@ -70,7 +82,7 @@ namespace GeneticAlgorithm.IntegrationTests
                 MaxLoaders = 2,
                 MaxScalers = 2,
                 MutationRate = 0.01,
-                Simulation = CreateSmallSimulation()
+                Simulation = CreateSmallSearchSimulation()
             };
 
         public static GeneticOptimizationRequest CreatePhaseGridRequest() =>
@@ -85,12 +97,9 @@ namespace GeneticAlgorithm.IntegrationTests
                 Simulation = new SimulationRequest
                 {
                     CoalVolume = 80,
-                    TruckCount = 2,
                     TruckLoadVolume = 20,
                     TruckCostPerDay = 100,
-                    LoaderCount = 1,
                     LoaderCostPerDay = 200,
-                    ScalerCount = 1,
                     ScalerCostPerDay = 300,
                     ProjectDurationDays = 30,
                     DelayCostPerDay = 50
