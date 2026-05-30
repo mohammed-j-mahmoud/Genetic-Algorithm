@@ -49,11 +49,15 @@ namespace GeneticAlgorithm.Core.Optimization
                 delayCostPerDay);
         }
 
+        internal static double EstimateTotalDaysFromMinutes(double totalTimeMinutes) =>
+            System.Math.Ceiling(totalTimeMinutes / MinutesPerWorkDay);
+
         internal static double EstimateFitness(
             float coalVolume,
             double fitnessScale,
-            double totalCost) =>
-            fitnessScale * coalVolume / (totalCost + 1);
+            double totalCost,
+            double totalDays) =>
+            FleetFitnessCalculator.Compute(coalVolume, fitnessScale, totalCost, totalDays);
 
         internal static double EstimateTotalTimeMinutes(
             float coalVolume,

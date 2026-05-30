@@ -318,21 +318,31 @@ namespace GeneticAlgorithm.Application
                         out int loaders,
                         out int scalers);
 
-                    double cost = FleetSurrogateCostModel.EstimateTotalCost(
+                    double totalMinutes = FleetSurrogateCostModel.EstimateTotalTimeMinutes(
                         sim.CoalVolume,
                         sim.TruckLoadVolume,
-                        sim.TruckCostPerDay,
-                        sim.LoaderCostPerDay,
-                        sim.ScalerCostPerDay,
-                        sim.ProjectDurationDays,
-                        sim.DelayCostPerDay,
                         loading,
                         weighing,
                         traveling,
                         trucks,
                         loaders,
                         scalers);
-                    double fitness = FleetSurrogateCostModel.EstimateFitness(sim.CoalVolume, FitnessScale, cost);
+                    double cost = FleetSurrogateCostModel.EstimateTotalCostFromMinutes(
+                        totalMinutes,
+                        trucks,
+                        loaders,
+                        scalers,
+                        sim.TruckCostPerDay,
+                        sim.LoaderCostPerDay,
+                        sim.ScalerCostPerDay,
+                        sim.ProjectDurationDays,
+                        sim.DelayCostPerDay);
+                    double totalDays = FleetSurrogateCostModel.EstimateTotalDaysFromMinutes(totalMinutes);
+                    double fitness = FleetSurrogateCostModel.EstimateFitness(
+                        sim.CoalVolume,
+                        FitnessScale,
+                        cost,
+                        totalDays);
                     ranked.Add((trucks, loaders, scalers, fitness));
 
                     ParallelProgress.ReportCompletion(progress, ref evaluatedCount, ref lastReportedPercent, total);
@@ -411,10 +421,94 @@ namespace GeneticAlgorithm.Application
 
         private static void ValidateRequest(GeneticOptimizationRequest request)
         {
+            string error = TryValidateRequest(request);
+            if (error != null)
+            {
+                if (request == null)
+                    throw new ArgumentNullException(nameof(request));
+                if (request.Simulation == null)
+                    throw new ArgumentNullException(nameof(request.Simulation));
+                throw new ArgumentOutOfRangeException(nameof(request), error);
+            }
+        }
+
+        /// <summary>
+        /// Returns an error message when the request is invalid; otherwise null.
+        /// </summary>
+        public static string TryValidateRequest(GeneticOptimizationRequest request)
+        {
+            const int maxDistributionEntries = 100;
+
             if (request == null)
-                throw new ArgumentNullException(nameof(request));
+                return "Request body is required.";
             if (request.Simulation == null)
-                throw new ArgumentNullException(nameof(request.Simulation));
+                return "simulation is required.";
+
+            try
+            {
+                GeneticAlgorithmConfig.Create(
+                    request.PopulationSize,
+                    request.MaxTrucks,
+                    request.MaxLoaders,
+                    request.MaxScalers,
+                    request.Simulation.CoalVolume,
+                    request.MutationRate);
+
+                if (request.Generations <= 0 || request.Generations > SimulationParameters.MaxParameterValue)
+                {
+                    return $"generations must be between 1 and {SimulationParameters.MaxParameterValue}.";
+                }
+
+                FleetCombinationIndex.TotalCombinations(
+                    request.MaxTrucks,
+                    request.MaxLoaders,
+                    request.MaxScalers);
+
+                string distributionError = ValidateDistributionCount(
+                    request.Simulation.LoadingDistribution,
+                    nameof(request.Simulation.LoadingDistribution),
+                    maxDistributionEntries);
+                if (distributionError != null)
+                    return distributionError;
+
+                distributionError = ValidateDistributionCount(
+                    request.Simulation.WeighingDistribution,
+                    nameof(request.Simulation.WeighingDistribution),
+                    maxDistributionEntries);
+                if (distributionError != null)
+                    return distributionError;
+
+                distributionError = ValidateDistributionCount(
+                    request.Simulation.TravelingDistribution,
+                    nameof(request.Simulation.TravelingDistribution),
+                    maxDistributionEntries);
+                if (distributionError != null)
+                    return distributionError;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ex.Message;
+            }
+
+            return null;
+        }
+
+        private static string ValidateDistributionCount(
+            System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>> distribution,
+            string name,
+            int maxEntries)
+        {
+            if (distribution == null)
+                return null;
+
+            if (distribution.Count > maxEntries)
+                return $"{name} cannot exceed {maxEntries} entries.";
+
+            return null;
         }
 
         private static GeneticAlgorithmConfig CreateConfig(GeneticOptimizationRequest request) =>

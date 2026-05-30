@@ -41,7 +41,7 @@ namespace GeneticAlgorithm.Core.Genetics
             double totalCost = simulation.TotalCost;
             return new FitnessSnapshot(
                 totalCost,
-                fitnessScale * coalVolume / (totalCost + 1),
+                FleetFitnessCalculator.Compute(coalVolume, fitnessScale, totalCost, simulation.TotalDays),
                 simulation.TotalDays,
                 simulation.DelayDays,
                 simulation.DelayCost,

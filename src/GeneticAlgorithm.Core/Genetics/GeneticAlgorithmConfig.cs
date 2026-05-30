@@ -26,7 +26,7 @@ namespace GeneticAlgorithm.Core.Genetics
         /// <summary>Per-gene mutation probability.</summary>
         public double MutationRate { get; }
 
-        /// <summary>Multiplier applied in fitness = scale * numCoal / (cost + 1).</summary>
+        /// <summary>Multiplier used by <see cref="FleetFitnessCalculator"/> (cost first, fewer days on ties).</summary>
         public double FitnessScale { get; }
 
         private GeneticAlgorithmConfig(

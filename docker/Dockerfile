@@ -8,5 +8,5 @@ RUN dotnet restore GeneticAlgorithm.sln \
 FROM mcr.microsoft.com/dotnet/runtime:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "genetic-algorithm.dll"]
+ENTRYPOINT ["dotnet", "truck-fleet-problem.dll"]
 CMD ["demo"]

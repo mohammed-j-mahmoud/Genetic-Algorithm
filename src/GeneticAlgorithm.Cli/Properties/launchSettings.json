@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "GeneticAlgorithm.Cli": {
+      "commandName": "Project",
+      "dotnetRunMessages": true
+    },
+    "help": {
+      "commandName": "Project",
+      "commandLineArgs": "help"
+    }
+  }
+}
