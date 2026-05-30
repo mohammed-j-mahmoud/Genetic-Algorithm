@@ -9,7 +9,6 @@ namespace GeneticAlgorithm.Cli
     {
         public static void Print()
         {
-            string exe = OptimizationPhaseDisplay.CliExecutableName;
             string max = SimulationParameters.MaxParameterValue.ToString("N0");
             string maxFleet = SimulationParameters.MaxResourceCount.ToString("N0");
 
@@ -18,14 +17,15 @@ namespace GeneticAlgorithm.Cli
             GeneticOptimizationRequest opt = DemoRequests.CreateOptimization(20);
 
             CliOutput.WriteTitle($"{OptimizationPhaseDisplay.ApplicationTitle} — command-line help");
-            CliOutput.WriteLine("Matches the desktop app tabs: Simulation, Exhaustive Search, Genetic Search,");
-            CliOutput.WriteLine("Surrogate Search, and Dynamic Programming Search.");
+            CliOutput.WriteLine("Matches the desktop app tabs: Genetic Algorithm, Simulation, Exhaustive Search,");
+            CliOutput.WriteLine("Genetic Search, Surrogate Search, and Dynamic Programming Search.");
             CliOutput.WriteBlankLine();
             CliOutput.WriteLine("MODES");
             CliOutput.WriteLine("  Interactive shell   Run with no arguments; type commands at the prompt.");
             CliOutput.WriteLine("  One-shot command    Run one command and exit (good for scripts).");
             CliOutput.WriteBlankLine();
             CliOutput.WriteLine("COMMANDS (desktop tab names)");
+            CliOutput.WriteLine($"  genetic-algorithm              {OptimizationPhaseDisplay.GeneticAlgorithmTab}");
             CliOutput.WriteLine($"  simulation                     {OptimizationPhaseDisplay.SimulationTab}");
             CliOutput.WriteLine($"  exhaustive-search              {OptimizationPhaseDisplay.ExhaustiveSearch}");
             CliOutput.WriteLine($"  genetic-search                 {OptimizationPhaseDisplay.GeneticSearch}");
@@ -37,9 +37,10 @@ namespace GeneticAlgorithm.Cli
             CliOutput.WriteLine("  exit                           Quit interactive shell (or Ctrl+C)");
             CliOutput.WriteBlankLine();
             CliOutput.WriteLine("SHORT ALIASES");
+            CliOutput.WriteLine("  ga, genetic, genetic-algo      → genetic-algorithm");
             CliOutput.WriteLine("  sim, simulate                → simulation");
             CliOutput.WriteLine("  exhaustive, phase1           → exhaustive-search");
-            CliOutput.WriteLine("  ga, genetic, optimize, phase2 → genetic-search");
+            CliOutput.WriteLine("  optimize, phase2             → genetic-search");
             CliOutput.WriteLine("  surrogate, phase3            → surrogate-search");
             CliOutput.WriteLine("  dp, phase4                   → dynamic-programming-search");
             CliOutput.WriteBlankLine();
@@ -57,7 +58,7 @@ namespace GeneticAlgorithm.Cli
             CliOutput.WriteLine("  Distributions (loading / weighing / traveling) use desktop demo values unless");
             CliOutput.WriteLine("  you change them through the API or desktop Distribution tab.");
             CliOutput.WriteBlankLine();
-            CliOutput.WriteLine("SEARCH OPTIONS (exhaustive / genetic / surrogate / dp commands)");
+            CliOutput.WriteLine("SEARCH OPTIONS (genetic-algorithm / exhaustive / genetic / surrogate / dp commands)");
             CliOutput.WriteLine($"  --max-trucks <int>           Max trucks gene bound (default demo: {opt.MaxTrucks})");
             CliOutput.WriteLine($"  --max-loaders <int>          Max loaders gene bound (default demo: {opt.MaxLoaders})");
             CliOutput.WriteLine($"  --max-scalers <int>          Max scalers gene bound (default demo: {opt.MaxScalers})");
@@ -66,26 +67,21 @@ namespace GeneticAlgorithm.Cli
             CliOutput.WriteLine($"  --mutation-rate, -m <0-1>   GA mutation rate (default demo: {Fmt(opt.MutationRate)})");
             CliOutput.WriteLine($"  Limits: generations/population/fleet bounds ≤ {max}; fleet counts ≤ {maxFleet}.");
             CliOutput.WriteBlankLine();
-            CliOutput.WriteLine("EXAMPLES — ONE-SHOT");
-            CliOutput.WriteLine($"  {exe}");
-            CliOutput.WriteLine($"  {exe} help");
-            CliOutput.WriteLine($"  {exe} simulation");
-            CliOutput.WriteLine($"  {exe} simulation --coal 5000 --trucks 4 --loaders 2 --scalers 1");
-            CliOutput.WriteLine($"  {exe} exhaustive-search --max-trucks 6 --max-loaders 2 --max-scalers 2");
-            CliOutput.WriteLine($"  {exe} genetic-search --generations 30 --max-trucks 8 --coal 10000");
-            CliOutput.WriteLine($"  {exe} ga -g 20 -p 40 --max-trucks 10 --mutation-rate 0.02");
-            CliOutput.WriteLine($"  {exe} surrogate-search --max-trucks 6 --max-loaders 2 --max-scalers 2");
-            CliOutput.WriteLine($"  {exe} dp --max-trucks 6 --max-loaders 2 --max-scalers 2");
-            CliOutput.WriteLine($"  {exe} demo");
-            CliOutput.WriteBlankLine();
-            CliOutput.WriteLine("EXAMPLES — INTERACTIVE (at the truck-fleet> prompt)");
+            CliOutput.WriteLine("EXAMPLES (at the truck-fleet> prompt — type as shown)");
             CliOutput.WriteLine("  help");
-            CliOutput.WriteLine("  simulation --coal 8000 --trucks 5");
-            CliOutput.WriteLine("  genetic-search -g 25 --max-trucks 8");
-            CliOutput.WriteLine("  exhaustive-search --max-trucks 4 --max-loaders 2 --max-scalers 2");
+            CliOutput.WriteLine("  simulation");
+            CliOutput.WriteLine("  simulation --coal 5000 --trucks 4 --loaders 2 --scalers 1");
+            CliOutput.WriteLine("  exhaustive-search --max-trucks 6 --max-loaders 2 --max-scalers 2");
+            CliOutput.WriteLine("  genetic-algorithm --generations 30 --max-trucks 8 --coal 10000");
+            CliOutput.WriteLine("  genetic-search --generations 30 --max-trucks 8 --coal 10000");
+            CliOutput.WriteLine("  ga -g 20 -p 40 --max-trucks 10 --mutation-rate 0.02");
+            CliOutput.WriteLine("  surrogate-search --max-trucks 6 --max-loaders 2 --max-scalers 2");
+            CliOutput.WriteLine("  dp --max-trucks 6 --max-loaders 2 --max-scalers 2");
+            CliOutput.WriteLine("  demo");
             CliOutput.WriteLine("  exit");
+            CliOutput.WriteLine("From PowerShell or cmd, prefix one-shot runs with truck-fleet-problem.");
             CliOutput.WriteBlankLine();
-            CliHelpTemplates.Print(exe);
+            CliHelpTemplates.Print();
         }
 
         private static string Fmt(float value) => value.ToString(CultureInfo.InvariantCulture);

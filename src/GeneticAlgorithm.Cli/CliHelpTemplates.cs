@@ -8,29 +8,44 @@ namespace GeneticAlgorithm.Cli
 {
     internal static class CliHelpTemplates
     {
-        public static void Print(string executableName)
+        public static void Print()
         {
-            if (string.IsNullOrWhiteSpace(executableName))
-                throw new ArgumentException("Executable name must not be empty.", nameof(executableName));
-
             SimulationRequest sim = DemoRequests.CreateSimulation();
             GeneticOptimizationRequest opt = DemoRequests.CreateOptimization(20);
+            GeneticOptimizationRequest gaOpt = DemoRequests.CreateOptimization(50);
 
             CliOutput.WriteTitle("COPY-PASTE TEMPLATES (edit values, then run)");
             CliOutput.WriteLine("Copy a template below. Edit the numbers on each --flag line before running.");
             CliOutput.WriteLine("Delete comment lines (# ...) before running.");
+            CliOutput.WriteLine("At the truck-fleet> prompt, run commands as shown (no executable prefix).");
+            CliOutput.WriteLine("From PowerShell or cmd, prefix one-shot runs with truck-fleet-problem.");
             CliOutput.WriteLine("Wrapped templates use PowerShell backtick (`) line continuation.");
             CliOutput.WriteLine("Or use the single-line version under each template.");
             CliOutput.WriteLine("For other search tabs, replace genetic-search with exhaustive-search,");
             CliOutput.WriteLine("surrogate-search, or dynamic-programming-search (omit GA-only flags).");
+            CliOutput.WriteLine("Use genetic-algorithm for the main Genetic Algorithm tab (stochastic fitness).");
             CliOutput.WriteBlankLine();
 
-            PrintSimulationTemplate(sim, executableName);
+            PrintGeneticAlgorithmTemplate(sim, gaOpt);
             CliOutput.WriteBlankLine();
-            PrintGeneticSearchTemplate(sim, opt, executableName);
+            PrintSimulationTemplate(sim);
+            CliOutput.WriteBlankLine();
+            PrintGeneticSearchTemplate(sim, opt);
         }
 
-        private static void PrintSimulationTemplate(SimulationRequest sim, string exe)
+        private static void PrintGeneticAlgorithmTemplate(
+            SimulationRequest sim,
+            GeneticOptimizationRequest opt)
+        {
+            CliOutput.WriteSubTitle($"TEMPLATE: genetic-algorithm ({OptimizationPhaseDisplay.GeneticAlgorithmTab} tab)");
+            CliOutput.WriteLine("# kind: GeneticOptimizationRequest");
+            CliOutput.WriteLine("# defaults: desktop demo + 50 generations");
+            WriteWrappedCommand("genetic-algorithm", BuildOptimizationEntries(sim, opt));
+            CliOutput.WriteLine("# single line:");
+            CliOutput.WriteLine(BuildSingleLine("genetic-algorithm", sim, opt));
+        }
+
+        private static void PrintSimulationTemplate(SimulationRequest sim)
         {
             CliOutput.WriteSubTitle($"TEMPLATE: simulation ({OptimizationPhaseDisplay.SimulationTab} tab)");
             CliOutput.WriteLine("# kind: Simulation");
@@ -48,19 +63,26 @@ namespace GeneticAlgorithm.Cli
                 Entry("simulation.projectDurationDays — project duration (days)", "--project-days", sim.ProjectDurationDays),
                 Entry("simulation.delayCostPerDay — delay cost / day", "--delay-cost", sim.DelayCostPerDay)
             });
-            CliOutput.WriteLine("# one-shot single line:");
-            CliOutput.WriteLine(BuildSingleLine(exe, "simulation", sim));
+            CliOutput.WriteLine("# single line:");
+            CliOutput.WriteLine(BuildSingleLine("simulation", sim));
         }
 
         private static void PrintGeneticSearchTemplate(
             SimulationRequest sim,
-            GeneticOptimizationRequest opt,
-            string exe)
+            GeneticOptimizationRequest opt)
         {
             CliOutput.WriteSubTitle($"TEMPLATE: genetic-search ({OptimizationPhaseDisplay.GeneticSearch} tab)");
             CliOutput.WriteLine("# kind: GeneticOptimizationRequest");
             CliOutput.WriteLine("# defaults: desktop demo + 20 generations");
-            WriteWrappedCommand("genetic-search", new[]
+            WriteWrappedCommand("genetic-search", BuildOptimizationEntries(sim, opt));
+            CliOutput.WriteLine("# single line:");
+            CliOutput.WriteLine(BuildSingleLine("genetic-search", sim, opt));
+        }
+
+        private static TemplateEntry[] BuildOptimizationEntries(
+            SimulationRequest sim,
+            GeneticOptimizationRequest opt) =>
+            new[]
             {
                 Entry("simulation.coalVolume — material volume", "--coal", sim.CoalVolume),
                 Entry("simulation.truckCount — trucks for verify simulation", "--trucks", sim.TruckCount),
@@ -78,10 +100,7 @@ namespace GeneticAlgorithm.Cli
                 Entry("search.generations — GA generations", "--generations", opt.Generations),
                 Entry("search.populationSize — GA population", "--population", opt.PopulationSize),
                 Entry("search.mutationRate — GA mutation rate (0-1)", "--mutation-rate", opt.MutationRate)
-            });
-            CliOutput.WriteLine("# one-shot single line:");
-            CliOutput.WriteLine(BuildSingleLine(exe, "genetic-search", sim, opt));
-        }
+            };
 
         /// <summary>
         /// Single generic overload replaces the previous float/double/int trio.
@@ -108,13 +127,12 @@ namespace GeneticAlgorithm.Cli
         /// Removing the redundant boolean flag: opt != null is the condition.
         /// </summary>
         private static string BuildSingleLine(
-            string exe,
             string command,
             SimulationRequest sim,
             GeneticOptimizationRequest opt = null)
         {
             var parts = new StringBuilder();
-            parts.Append(exe).Append(' ').Append(command);
+            parts.Append(command);
             Append(parts, "--coal", sim.CoalVolume);
             Append(parts, "--trucks", sim.TruckCount);
             Append(parts, "--loaders", sim.LoaderCount);

@@ -77,12 +77,15 @@ namespace GeneticAlgorithm.Cli
                     case "simulate":
                     case "simulation":
                         return RunSimulation(ParseOptions(args));
+                    case "genetic-algorithm":
+                    case "genetic-algo":
+                    case "ga":
+                    case "genetic":
+                        return RunGeneticAlgorithm(ParseOptions(args));
                     case "exhaustive":
                     case "exhaustive-search":
                     case "phase1":
                         return RunOptimizationPhase(OptimizationPhase.Phase1, ParseOptions(args), defaultGenerations: 1);
-                    case "ga":
-                    case "genetic":
                     case "genetic-search":
                     case "optimize":
                     case "phase2":
@@ -142,6 +145,31 @@ namespace GeneticAlgorithm.Cli
             return 0;
         }
 
+        private static int RunGeneticAlgorithm(CliRunOptions options)
+        {
+            GeneticOptimizationRequest request = options.BuildOptimizationRequest(defaultGenerations: 50);
+            string error = PhaseOptimizationService.TryValidateRequest(request);
+            if (error != null)
+                throw new ArgumentException(error);
+
+            Console.WriteLine($"{OptimizationPhaseDisplay.GeneticAlgorithmTab} — {options.DescribeInputs()}");
+
+            int generations = request.Generations;
+            int lastReportedGeneration = 0;
+            var progress = new Progress<GenerationProgress>(report =>
+            {
+                if (report.Generation <= lastReportedGeneration)
+                    return;
+
+                lastReportedGeneration = report.Generation;
+                Console.WriteLine($"Generation {report.Generation}/{generations}");
+            });
+
+            OptimizationRunResult result = new GeneticOptimizationService().Run(request, progress);
+            PrintOptimizationResult(result, geneticAlgorithmTab: true);
+            return 0;
+        }
+
         private static int RunOptimizationPhase(
             OptimizationPhase phase,
             CliRunOptions options,
@@ -192,9 +220,11 @@ namespace GeneticAlgorithm.Cli
             });
         }
 
-        private static void PrintOptimizationResult(OptimizationRunResult result)
+        private static void PrintOptimizationResult(OptimizationRunResult result, bool geneticAlgorithmTab = false)
         {
-            OptimizationRunResponse response = OptimizationRunResponse.FromResult(result);
+            OptimizationRunResponse response = geneticAlgorithmTab
+                ? OptimizationRunResponse.FromGeneticAlgorithm(result)
+                : OptimizationRunResponse.FromResult(result);
             Console.WriteLine();
             Console.WriteLine($"Tab: {response.Strategy}");
             Console.WriteLine($"Summary: {response.MethodSummary}");

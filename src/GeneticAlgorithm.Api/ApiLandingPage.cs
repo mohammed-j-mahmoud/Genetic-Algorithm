@@ -41,11 +41,11 @@ internal static class ApiLandingPage
     <li><code>GET /api/sample/simulation-request</code> — sample JSON for Simulation</li>
     <li><code>GET /api/sample/optimization-request</code> — sample JSON for search tabs</li>
     <li><code>POST /api/simulation</code> — {OptimizationPhaseDisplay.SimulationTab} tab</li>
+    <li><code>POST /api/genetic-algorithm</code> — {OptimizationPhaseDisplay.GeneticAlgorithmTab} tab</li>
     <li><code>POST /api/exhaustive-search</code> — {OptimizationPhaseDisplay.ExhaustiveSearch} tab</li>
     <li><code>POST /api/genetic-search</code> — {OptimizationPhaseDisplay.GeneticSearch} tab</li>
     <li><code>POST /api/surrogate-search</code> — {OptimizationPhaseDisplay.SurrogateSearch} tab</li>
     <li><code>POST /api/dynamic-programming-search</code> — {OptimizationPhaseDisplay.DynamicProgrammingSearch} tab</li>
-    <li><code>POST /api/genetic-algorithm</code> — alias for genetic-search</li>
   </ul>
 
   <p><strong>Postman:</strong> set Body to <em>raw</em> → <em>JSON</em>. Property names must use double quotes.</p>

@@ -52,5 +52,34 @@ namespace GeneticAlgorithm.Application
                 MethodSummary = result.MethodSummary
             };
         }
+
+        public static OptimizationRunResponse FromGeneticAlgorithm(OptimizationRunResult result)
+        {
+            if (result == null)
+                throw new System.ArgumentNullException(nameof(result));
+
+            var best = result.BestChromosome;
+            return new OptimizationRunResponse
+            {
+                Application = OptimizationPhaseDisplay.ApplicationTitle,
+                Phase = "GeneticAlgorithm",
+                Strategy = OptimizationPhaseDisplay.GeneticAlgorithmTab,
+                Tab = OptimizationPhaseDisplay.GeneticAlgorithmTab,
+                BestGeneration = result.BestGeneration,
+                GenerationsCompleted = result.GenerationsCompleted,
+                StoppedEarly = result.StoppedEarly,
+                Trucks = best?.Genes[0] ?? 0,
+                Loaders = best?.Genes[1] ?? 0,
+                Scalers = best?.Genes[2] ?? 0,
+                Fitness = best?.Fitness ?? 0,
+                TotalCost = best?.TotalCost ?? 0,
+                TotalDays = best?.TotalDays ?? 0,
+                CombinationsEvaluated = result.CombinationsEvaluated,
+                SimulationCalls = result.SimulationCalls,
+                CacheHits = result.CacheHits,
+                MethodSummary = result.MethodSummary
+                    ?? "GA with seeded stochastic simulation fitness (same as Genetic Algorithm tab)."
+            };
+        }
     }
 }

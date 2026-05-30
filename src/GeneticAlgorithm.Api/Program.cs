@@ -8,6 +8,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNameCaseInsensitive = true;
 });
 builder.Services.AddSingleton<SimulationService>();
+builder.Services.AddSingleton<GeneticOptimizationService>();
 builder.Services.AddSingleton<PhaseOptimizationService>();
 
 var app = builder.Build();
@@ -45,10 +46,19 @@ app.MapPost("/api/surrogate-search", (GeneticOptimizationRequest request, PhaseO
 app.MapPost("/api/dynamic-programming-search", (GeneticOptimizationRequest request, PhaseOptimizationService service) =>
     RunOptimization(request, service, s => s.RunPhase4(request)));
 
-app.MapPost("/api/genetic-algorithm", (GeneticOptimizationRequest request, PhaseOptimizationService service) =>
-    RunOptimization(request, service, s => s.RunPhase2(request)));
+app.MapPost("/api/genetic-algorithm", (GeneticOptimizationRequest request, GeneticOptimizationService service) =>
+    RunGeneticAlgorithm(request, service));
 
 app.Run();
+
+static IResult RunGeneticAlgorithm(GeneticOptimizationRequest request, GeneticOptimizationService service)
+{
+    string error = PhaseOptimizationService.TryValidateRequest(request);
+    if (error != null)
+        return Results.BadRequest(new { error });
+
+    return Results.Ok(OptimizationRunResponse.FromGeneticAlgorithm(service.Run(request)));
+}
 
 static IResult RunOptimization(
     GeneticOptimizationRequest request,

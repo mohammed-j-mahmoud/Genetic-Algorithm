@@ -74,7 +74,8 @@ namespace GeneticAlgorithm.Application
                     FinalPopulation = algorithm.Population,
                     SimulationCalls = algorithm.SimulationCalls,
                     CacheHits = algorithm.CacheHits,
-                    CombinationsEvaluated = request.MaxTrucks * request.MaxLoaders * request.MaxScalers
+                    CombinationsEvaluated = request.MaxTrucks * request.MaxLoaders * request.MaxScalers,
+                    MethodSummary = "GA with seeded stochastic simulation fitness (same as Genetic Algorithm tab)."
                 };
             }
         }

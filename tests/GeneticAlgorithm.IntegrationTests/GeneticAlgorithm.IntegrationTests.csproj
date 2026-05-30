@@ -17,6 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\GeneticAlgorithm.Api\GeneticAlgorithm.Api.csproj" />
     <ProjectReference Include="..\..\src\GeneticAlgorithm.Application\GeneticAlgorithm.Application.csproj" />
+    <ProjectReference Include="..\..\src\GeneticAlgorithm.Cli\GeneticAlgorithm.Cli.csproj" />
+    <ProjectReference Include="..\..\src\GeneticAlgorithm.Core\GeneticAlgorithm.Core.csproj" />
   </ItemGroup>
 
 </Project>
