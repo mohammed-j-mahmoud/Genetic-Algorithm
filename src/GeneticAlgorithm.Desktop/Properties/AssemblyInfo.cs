@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("GeneticAlgorithm.Desktop")]
-[assembly: AssemblyCopyright("Copyright ù  2022")]
+[assembly: AssemblyCopyright("Copyright ÔøΩ  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

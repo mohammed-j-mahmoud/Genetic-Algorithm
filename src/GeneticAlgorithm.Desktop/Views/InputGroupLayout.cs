@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using GeneticAlgorithm.Desktop.Views.Layout;
 
 namespace GeneticAlgorithm.Desktop.Views
 {
@@ -8,7 +9,7 @@ namespace GeneticAlgorithm.Desktop.Views
     /// </summary>
     internal static class InputGroupLayout
     {
-        public const int RequiredWidth = 580;
+        public const int RequiredWidth = AppLayoutMetrics.InputColumnWidth;
 
         private const int LeftLabelX = 10;
         private const int LeftLabelWidth = 200;
@@ -19,77 +20,155 @@ namespace GeneticAlgorithm.Desktop.Views
         private const int FieldWidth = 82;
         private const int RowHeight = 32;
 
-        public static void ConfigureGeneticAlgorithmInputs(GroupBox groupBox, Button clearButton)
+        public static void ConfigureGeneticAlgorithmInputs(
+            GroupBox groupBox,
+            Label lblMaterialVolume,
+            Label lblLoadPerTruck,
+            Label lblTruckCostPerDay,
+            Label lblLoaderCostPerDay,
+            Label lblScalerCostPerDay,
+            Label lblProjectDuration,
+            Label lblDelayCostPerDay,
+            TextBox txtMaterialVolume,
+            TextBox txtLoadPerTruck,
+            TextBox txtTruckCostPerDay,
+            TextBox txtLoaderCostPerDay,
+            TextBox txtScalerCostPerDay,
+            TextBox txtProjectDuration,
+            TextBox txtDelayCostPerDay,
+            Label lblMaxTrucks,
+            TextBox txtMaxTrucks,
+            Label lblMaxLoaders,
+            TextBox txtMaxLoaders,
+            Label lblMaxScalers,
+            TextBox txtMaxScalers,
+            Label lblPopulation,
+            TextBox txtPopulation,
+            Label lblGenerations,
+            TextBox txtGenerations,
+            Label lblMutationRate,
+            TextBox txtMutationRate)
         {
             ConfigureSharedInputs(
-                groupBox,
-                labelMaterial: Find<Label>(groupBox, "label16"),
-                labelLoad: Find<Label>(groupBox, "label19"),
-                labelTruckCost: Find<Label>(groupBox, "label20"),
-                labelLoaderCost: Find<Label>(groupBox, "label22"),
-                labelScalerCost: Find<Label>(groupBox, "label21"),
-                labelDuration: Find<Label>(groupBox, "label18"),
-                labelDelay: Find<Label>(groupBox, "label17"),
-                fieldMaterial: Find<TextBox>(groupBox, "txtbxmaterialAlgo"),
-                fieldLoad: Find<TextBox>(groupBox, "txtbxlodrprtrukAlgo"),
-                fieldTruckCost: Find<TextBox>(groupBox, "txtbxcostprtrukAlgo"),
-                fieldLoaderCost: Find<TextBox>(groupBox, "txtbxCostPrLoderAlgo"),
-                fieldScalerCost: Find<TextBox>(groupBox, "txtbxCostPrScalerAlgo"),
-                fieldDuration: Find<TextBox>(groupBox, "txtbxProjectDurationAlgo"),
-                fieldDelay: Find<TextBox>(groupBox, "txtbxCostOfDelayAlgo"));
+                lblMaterialVolume,
+                lblLoadPerTruck,
+                lblTruckCostPerDay,
+                lblLoaderCostPerDay,
+                lblScalerCostPerDay,
+                lblProjectDuration,
+                lblDelayCostPerDay,
+                txtMaterialVolume,
+                txtLoadPerTruck,
+                txtTruckCostPerDay,
+                txtLoaderCostPerDay,
+                txtScalerCostPerDay,
+                txtProjectDuration,
+                txtDelayCostPerDay);
 
-            PlaceRow(Find<Label>(groupBox, "label15"), Find<TextBox>(groupBox, "txtbxTrukNoMxAlgo"), 0, right: true);
-            PlaceRow(Find<Label>(groupBox, "label7"), Find<TextBox>(groupBox, "txtbxLosderNoMxAlgo"), 1, right: true);
-            PlaceRow(Find<Label>(groupBox, "label6"), Find<TextBox>(groupBox, "txtbxScalerNoMxAlgo"), 2, right: true);
-            PlaceRow(Find<Label>(groupBox, "label2"), Find<TextBox>(groupBox, "txtbxPopulationNo"), 3, right: true);
-            PlaceRow(Find<Label>(groupBox, "label1"), Find<TextBox>(groupBox, "txtbxGenerationNo"), 4, right: true);
-            PlaceRow(Find<Label>(groupBox, "label5"), Find<TextBox>(groupBox, "txtbxMutationRate"), 5, right: true);
+            PlaceRow(lblMaxTrucks, txtMaxTrucks, 0, right: true);
+            PlaceRow(lblMaxLoaders, txtMaxLoaders, 1, right: true);
+            PlaceRow(lblMaxScalers, txtMaxScalers, 2, right: true);
+            PlaceRow(lblPopulation, txtPopulation, 3, right: true);
+            PlaceRow(lblGenerations, txtGenerations, 4, right: true);
+            PlaceRow(lblMutationRate, txtMutationRate, 5, right: true);
 
-            if (clearButton != null)
-                clearButton.SetBounds(RightLabelX, (RowHeight * 7) + 6, RightFieldX + FieldWidth - RightLabelX, 33);
+            if (groupBox != null)
+                groupBox.MinimumSize = new Size(RequiredWidth, (RowHeight * 7) + 28);
         }
 
-        public static void ConfigureSimulationInputs(GroupBox groupBox)
+        public static void ConfigureSimulationInputs(
+            GroupBox groupBox,
+            Label lblMaterialVolume,
+            Label lblLoadPerTruck,
+            Label lblTruckCostPerDay,
+            Label lblLoaderCostPerDay,
+            Label lblScalerCostPerDay,
+            Label lblTruckCount,
+            TextBox txtMaterialVolume,
+            TextBox txtLoadPerTruck,
+            TextBox txtTruckCostPerDay,
+            TextBox txtLoaderCostPerDay,
+            TextBox txtScalerCostPerDay,
+            TextBox txtTruckCount,
+            Label lblLoaderCount,
+            TextBox txtLoaderCount,
+            Label lblScalerCount,
+            TextBox txtScalerCount,
+            Label lblProjectDuration,
+            TextBox txtProjectDuration,
+            Label lblDelayCostPerDay,
+            TextBox txtDelayCostPerDay)
         {
-            PlaceRow(Find<Label>(groupBox, "label12"), Find<TextBox>(groupBox, "txtbxmaterialsim"), 0, right: false);
-            PlaceRow(Find<Label>(groupBox, "label23"), Find<TextBox>(groupBox, "txtbxlodrprtruk"), 1, right: false);
-            PlaceRow(Find<Label>(groupBox, "label24"), Find<TextBox>(groupBox, "txtbxcostprtruk"), 2, right: false);
-            PlaceRow(Find<Label>(groupBox, "label26"), Find<TextBox>(groupBox, "txtbxCostPrLoder"), 3, right: false);
-            PlaceRow(Find<Label>(groupBox, "label25"), Find<TextBox>(groupBox, "txtbxCostPrScaler"), 4, right: false);
+            ConfigureSharedInputs(
+                lblMaterialVolume,
+                lblLoadPerTruck,
+                lblTruckCostPerDay,
+                lblLoaderCostPerDay,
+                lblScalerCostPerDay,
+                lblProjectDuration,
+                lblDelayCostPerDay,
+                txtMaterialVolume,
+                txtLoadPerTruck,
+                txtTruckCostPerDay,
+                txtLoaderCostPerDay,
+                txtScalerCostPerDay,
+                txtProjectDuration,
+                txtDelayCostPerDay);
 
-            PlaceRow(Find<Label>(groupBox, "label11"), Find<TextBox>(groupBox, "txtbxTrukNO"), 0, right: true);
-            PlaceRow(Find<Label>(groupBox, "label10"), Find<TextBox>(groupBox, "txtbxLoaderNo"), 1, right: true);
-            PlaceRow(Find<Label>(groupBox, "label9"), Find<TextBox>(groupBox, "txtbxScalerNo"), 2, right: true);
-            PlaceRow(Find<Label>(groupBox, "label14"), Find<TextBox>(groupBox, "txtbxProjectDuration"), 3, right: true);
-            PlaceRow(Find<Label>(groupBox, "label13"), Find<TextBox>(groupBox, "txtbxCostOfDelay"), 4, right: true);
+            PlaceRow(lblTruckCount, txtTruckCount, 0, right: true);
+            PlaceRow(lblLoaderCount, txtLoaderCount, 1, right: true);
+            PlaceRow(lblScalerCount, txtScalerCount, 2, right: true);
+            PlaceRow(lblProjectDuration, txtProjectDuration, 3, right: true);
+            PlaceRow(lblDelayCostPerDay, txtDelayCostPerDay, 4, right: true);
 
             if (groupBox != null)
                 groupBox.MinimumSize = new Size(RequiredWidth, (RowHeight * 5) + 40);
         }
 
-        public static void ConfigureSimulationOutputs(GroupBox utilizationBox, GroupBox costBox)
+        public static void ConfigureSimulationOutputs(
+            GroupBox utilizationBox,
+            GroupBox costBox,
+            Label lblUtilTrucksCaption,
+            Label lblUtilTrucksValue,
+            Label lblUtilLoadersCaption,
+            Label lblUtilLoadersValue,
+            Label lblUtilScalersCaption,
+            Label lblUtilScalersValue,
+            Label lblProjectDurationCaption,
+            Label lblProjectDurationValue,
+            Label lblDaysDelayedCaption,
+            Label lblDaysDelayedValue,
+            Label lblTruckCostCaption,
+            Label lblTruckCostValue,
+            Label lblDelayCostCaption,
+            Label lblDelayCostValue,
+            Label lblLoaderCostCaption,
+            Label lblLoaderCostValue,
+            Label lblTotalCostCaption,
+            Label lblTotalCostValue,
+            Label lblScalerCostCaption,
+            Label lblScalerCostValue)
         {
-            ConfigureUtilizationRow(utilizationBox, "label28", "UtilTrucks", 0);
-            ConfigureUtilizationRow(utilizationBox, "label31", "UtilLoader", 1);
-            ConfigureUtilizationRow(utilizationBox, "label32", "lblUtilScaler", 2);
+            ConfigureUtilizationRow(lblUtilTrucksCaption, lblUtilTrucksValue, 0);
+            ConfigureUtilizationRow(lblUtilLoadersCaption, lblUtilLoadersValue, 1);
+            ConfigureUtilizationRow(lblUtilScalersCaption, lblUtilScalersValue, 2);
 
             if (utilizationBox != null)
                 utilizationBox.MinimumSize = new Size(290, 120);
 
-            ConfigureCostRow(costBox, "label30", "lblprojectDuration", 0, valueColumn: 0);
-            ConfigureCostRow(costBox, "label44", "lbldaysofdelayed", 0, valueColumn: 1);
-            ConfigureCostRow(costBox, "label27", "lblTruckCost", 1, valueColumn: 0);
-            ConfigureCostRow(costBox, "label29", "lblDelayCost", 1, valueColumn: 1);
-            ConfigureCostRow(costBox, "label34", "lblLoaderCost", 2, valueColumn: 0);
-            ConfigureCostRow(costBox, "label45", "lbltotalcost", 2, valueColumn: 1);
-            ConfigureCostRow(costBox, "label33", "lblScalerCost", 3, valueColumn: 0);
+            ConfigureCostRow(lblProjectDurationCaption, lblProjectDurationValue, 0, valueColumn: 0);
+            ConfigureCostRow(lblDaysDelayedCaption, lblDaysDelayedValue, 0, valueColumn: 1);
+            ConfigureCostRow(lblTruckCostCaption, lblTruckCostValue, 1, valueColumn: 0);
+            ConfigureCostRow(lblDelayCostCaption, lblDelayCostValue, 1, valueColumn: 1);
+            ConfigureCostRow(lblLoaderCostCaption, lblLoaderCostValue, 2, valueColumn: 0);
+            ConfigureCostRow(lblTotalCostCaption, lblTotalCostValue, 2, valueColumn: 1);
+            ConfigureCostRow(lblScalerCostCaption, lblScalerCostValue, 3, valueColumn: 0);
 
             if (costBox != null)
                 costBox.MinimumSize = new Size(420, 170);
         }
 
         private static void ConfigureSharedInputs(
-            GroupBox groupBox,
             Label labelMaterial,
             Label labelLoad,
             Label labelTruckCost,
@@ -112,15 +191,10 @@ namespace GeneticAlgorithm.Desktop.Views
             PlaceRow(labelScalerCost, fieldScalerCost, 4, right: false);
             PlaceRow(labelDuration, fieldDuration, 5, right: false);
             PlaceRow(labelDelay, fieldDelay, 6, right: false);
-
-            if (groupBox != null)
-                groupBox.MinimumSize = new Size(RequiredWidth, (RowHeight * 7) + 56);
         }
 
-        private static void ConfigureUtilizationRow(GroupBox box, string labelName, string valueName, int row)
+        private static void ConfigureUtilizationRow(Label label, Label value, int row)
         {
-            Label label = Find<Label>(box, labelName);
-            Label value = Find<Label>(box, valueName);
             if (label == null || value == null)
                 return;
 
@@ -129,15 +203,8 @@ namespace GeneticAlgorithm.Desktop.Views
             value.SetBounds(225, y, 55, 20);
         }
 
-        private static void ConfigureCostRow(
-            GroupBox box,
-            string labelName,
-            string valueName,
-            int row,
-            int valueColumn)
+        private static void ConfigureCostRow(Label label, Label value, int row, int valueColumn)
         {
-            Label label = Find<Label>(box, labelName);
-            Label value = Find<Label>(box, valueName);
             if (label == null || value == null)
                 return;
 
@@ -176,20 +243,6 @@ namespace GeneticAlgorithm.Desktop.Views
         {
             label.AutoSize = false;
             label.SetBounds(x, y, width, 28);
-        }
-
-        private static T Find<T>(Control parent, string name) where T : Control
-        {
-            if (parent == null)
-                return null;
-
-            foreach (Control control in parent.Controls)
-            {
-                if (control.Name == name && control is T match)
-                    return match;
-            }
-
-            return null;
         }
     }
 }

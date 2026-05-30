@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using GeneticAlgorithm.Desktop.Views.Layout;
 
 namespace GeneticAlgorithm.Desktop.Views
 {
@@ -10,8 +11,9 @@ namespace GeneticAlgorithm.Desktop.Views
     {
         public GaMethodInfoPanel()
         {
-            Text = "Method description and best result";
-            Padding = new Padding(10, 4, 10, 10);
+            Text = "Method and best result";
+            Padding = new Padding(AppLayoutMetrics.Margin, 8, AppLayoutMetrics.Margin, AppLayoutMetrics.Margin);
+            Font = AppLayoutMetrics.CaptionFont;
 
             var layout = new TableLayoutPanel
             {
@@ -22,11 +24,12 @@ namespace GeneticAlgorithm.Desktop.Views
             };
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             MethodSummary = CreateTextLabel(
-                "Classic GA — evolves a population over many generations using GeneticSharp.");
+                "Classic genetic algorithm — evolves a population over many generations.",
+                title: true);
             HowItWorks = CreateTextLabel(
                 "• Search: genetic algorithm (sample of search space, not every combo)" + System.Environment.NewLine +
                 "• Simulation during search: seeded stochastic (full random load/weigh/travel)" + System.Environment.NewLine +
@@ -35,8 +38,7 @@ namespace GeneticAlgorithm.Desktop.Views
 
             BestResult = new BestResultSummaryGroup("Best result (seeded stochastic simulation)")
             {
-                AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                Dock = DockStyle.Fill,
                 Margin = new Padding(0, 8, 0, 8)
             };
 
@@ -57,15 +59,17 @@ namespace GeneticAlgorithm.Desktop.Views
 
         public Label RunStats { get; }
 
-        private static Label CreateTextLabel(string text)
+        private static Label CreateTextLabel(string text, bool title = false)
         {
-            return new Label
+            var label = new Label
             {
                 Text = text,
                 AutoSize = true,
                 MaximumSize = new Size(900, 0),
                 Margin = new Padding(0, 0, 0, 6)
             };
+            UiTheme.StyleSectionLabel(label, title);
+            return label;
         }
     }
 }

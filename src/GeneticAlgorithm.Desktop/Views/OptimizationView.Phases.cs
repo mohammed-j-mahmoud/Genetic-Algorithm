@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using GeneticAlgorithm.Application;
 using GeneticAlgorithm.Application.Models;
 using GeneticAlgorithm.Desktop.Views;
+using GeneticAlgorithm.Desktop.Views.Layout;
 
 namespace GeneticAlgorithm.Desktop
 {
@@ -20,23 +21,96 @@ namespace GeneticAlgorithm.Desktop
         private CancellationTokenSource _runCancellation;
         private Button _btnStopGenetic;
         private Button _btnStopSim;
+        private Button _btnRunSimDemo;
         private bool _simRunning;
 
         private void InitializePhaseTabs()
         {
-            MinimumSize = new Size(1200, 680);
-            if (ClientSize.Width < 1320 || ClientSize.Height < 780)
-                ClientSize = new Size(1320, 780);
+            if (ClientSize.Width < AppLayoutMetrics.FormDefaultWidth || ClientSize.Height < AppLayoutMetrics.FormDefaultHeight)
+                ClientSize = new Size(AppLayoutMetrics.FormDefaultWidth, AppLayoutMetrics.FormDefaultHeight);
+            StartPosition = FormStartPosition.CenterScreen;
 
             ApplyInputFieldLabels();
-            InputGroupLayout.ConfigureGeneticAlgorithmInputs(groupBox1, button5);
-            InputGroupLayout.ConfigureSimulationInputs(groupBox5);
-            InputGroupLayout.ConfigureSimulationOutputs(groupBox6, groupBox7);
+            InputGroupLayout.ConfigureGeneticAlgorithmInputs(
+                grpGaInputs,
+                lblGaMaterialVolume,
+                lblGaLoadPerTruck,
+                lblGaTruckCostPerDay,
+                lblGaLoaderCostPerDay,
+                lblGaScalerCostPerDay,
+                lblGaProjectDuration,
+                lblGaDelayCostPerDay,
+                txtGaMaterialVolume,
+                txtGaLoadPerTruck,
+                txtGaTruckCostPerDay,
+                txtGaLoaderCostPerDay,
+                txtGaScalerCostPerDay,
+                txtGaProjectDuration,
+                txtGaDelayCostPerDay,
+                lblGaMaxTrucks,
+                txtGaMaxTrucks,
+                lblGaMaxLoaders,
+                txtGaMaxLoaders,
+                lblGaMaxScalers,
+                txtGaMaxScalers,
+                lblGaPopulation,
+                txtGaPopulation,
+                lblGaGenerations,
+                txtGaGenerations,
+                lblGaMutationRate,
+                txtGaMutationRate);
+            InputGroupLayout.ConfigureSimulationInputs(
+                grpSimulationInputs,
+                lblSimMaterialVolume,
+                lblSimLoadPerTruck,
+                lblSimTruckCostPerDay,
+                lblSimLoaderCostPerDay,
+                lblSimScalerCostPerDay,
+                lblSimTruckCount,
+                txtSimMaterialVolume,
+                txtSimLoadPerTruck,
+                txtSimTruckCostPerDay,
+                txtSimLoaderCostPerDay,
+                txtSimScalerCostPerDay,
+                txtSimTruckCount,
+                lblSimLoaderCount,
+                txtSimLoaderCount,
+                lblSimScalerCount,
+                txtSimScalerCount,
+                lblSimProjectDuration,
+                txtSimProjectDuration,
+                lblSimDelayCostPerDay,
+                txtSimDelayCostPerDay);
+            InputGroupLayout.ConfigureSimulationOutputs(
+                grpSimulationUtilizationOutputs,
+                grpSimulationCostOutputs,
+                lblSimUtilTrucksCaption,
+                lblSimUtilTrucksValue,
+                lblSimUtilLoadersCaption,
+                lblSimUtilLoadersValue,
+                lblSimUtilScalersCaption,
+                lblSimUtilScalersValue,
+                lblSimProjectDurationCaption,
+                lblSimProjectDurationValue,
+                lblSimDaysDelayedCaption,
+                lblSimDaysDelayedValue,
+                lblSimTruckCostCaption,
+                lblSimTruckCostValue,
+                lblSimDelayCostCaption,
+                lblSimDelayCostValue,
+                lblSimLoaderCostCaption,
+                lblSimLoaderCostValue,
+                lblSimTotalCostCaption,
+                lblSimTotalCostValue,
+                lblSimScalerCostCaption,
+                lblSimScalerCostValue);
 
-            InitializeGaMethodInfo();
+            ReparentGaClearButton();
+
             InitializeRunStopButtons();
+            InitializeGaMethodInfo();
             InitializeSimulationTabLayout();
-            groupBox8.Visible = false;
+            InitializeDistributionTabLayout();
 
             _phase1Panel = CreatePhasePanel(
                 OptimizationPhaseDisplay.ExhaustiveSearch,
@@ -77,10 +151,14 @@ namespace GeneticAlgorithm.Desktop
                 "• Best when: you want the proven best expected-time fleet within bounds",
                 OptimizationPhase.Phase4);
 
-            tabControl1.Controls.Add(CreatePhaseTab(OptimizationPhaseDisplay.ExhaustiveSearch, _phase1Panel));
-            tabControl1.Controls.Add(CreatePhaseTab(OptimizationPhaseDisplay.GeneticSearch, _phase2Panel));
-            tabControl1.Controls.Add(CreatePhaseTab(OptimizationPhaseDisplay.SurrogateSearch, _phase3Panel));
-            tabControl1.Controls.Add(CreatePhaseTab(OptimizationPhaseDisplay.DynamicProgrammingSearch, _phase4Panel));
+            RegisterPhaseTab(OptimizationPhaseDisplay.ExhaustiveSearch, _phase1Panel);
+            RegisterPhaseTab(OptimizationPhaseDisplay.GeneticSearch, _phase2Panel);
+            RegisterPhaseTab(OptimizationPhaseDisplay.SurrogateSearch, _phase3Panel);
+            RegisterPhaseTab(OptimizationPhaseDisplay.DynamicProgrammingSearch, _phase4Panel);
+
+            grpLegacyGaOutputs.Visible = false;
+            ApplyGlobalUiPolish();
+            EnsureDefaultDistributionsPopulated();
         }
 
         private void InitializeRunStopButtons()
@@ -92,7 +170,7 @@ namespace GeneticAlgorithm.Desktop
                 Enabled = false
             };
             _btnStopGenetic.Click += (_, __) => _runCancellation?.Cancel();
-            tabPage1.Controls.Add(_btnStopGenetic);
+            tabGeneticAlgorithm.Controls.Add(_btnStopGenetic);
 
             _btnStopSim = new Button
             {
@@ -102,85 +180,255 @@ namespace GeneticAlgorithm.Desktop
                 Visible = false   // simulation has no cooperative cancellation path yet
             };
             _btnStopSim.Click += (_, __) => _runCancellation?.Cancel();
-            tabPage3.Controls.Add(_btnStopSim);
+            tabSimulation.Controls.Add(_btnStopSim);
+
+            _btnRunSimDemo = new Button
+            {
+                Text = UiCopy.RunDemo,
+                Size = new Size(250, AppLayoutMetrics.PrimaryButtonHeight)
+            };
+            _btnRunSimDemo.Click += async (_, __) => await RunSimulationDemoAsync().ConfigureAwait(true);
+            tabSimulation.Controls.Add(_btnRunSimDemo);
         }
 
         private void InitializeGaMethodInfo()
         {
-            tabPage1.AutoScroll = true;
+            tabGeneticAlgorithm.AutoScroll = true;
             _gaMethodInfoPanel = new GaMethodInfoPanel();
-            tabPage1.Controls.Add(_gaMethodInfoPanel);
+            tabGeneticAlgorithm.Controls.Add(_gaMethodInfoPanel);
 
             Resize += (_, __) =>
             {
                 LayoutGeneticAlgorithmTab();
                 LayoutSimulationTab();
+                LayoutDistributionTab();
             };
             LayoutGeneticAlgorithmTab();
         }
 
         private void InitializeSimulationTabLayout()
         {
-            tabPage3.AutoScroll = true;
+            tabSimulation.AutoScroll = true;
             LayoutSimulationTab();
+        }
+
+        private void InitializeDistributionTabLayout()
+        {
+            tabDistribution.AutoScroll = false;
+            grpDistributionDefaults.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            grpDistributionNewValues.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            LayoutDistributionTab();
+        }
+
+        private void LayoutDistributionTab()
+        {
+            if (tabDistribution == null || grpDistributionNewValues == null || grpDistributionDefaults == null)
+                return;
+
+            int margin = AppLayoutMetrics.Margin;
+            int gap = AppLayoutMetrics.ColumnGap;
+            int tabWidth = tabDistribution.ClientSize.Width;
+            int tabHeight = tabDistribution.ClientSize.Height;
+
+            int leftWidth = Math.Clamp((tabWidth - margin * 2 - gap) / 3, 280, 360);
+            int rightWidth = Math.Max(420, tabWidth - margin * 2 - gap - leftWidth);
+            int panelHeight = Math.Max(360, tabHeight - margin * 2);
+
+            grpDistributionDefaults.SetBounds(margin, margin, leftWidth, panelHeight);
+            grpDistributionNewValues.SetBounds(margin + leftWidth + gap, margin, rightWidth, panelHeight);
+
+            LayoutDefaultValuesPanel(leftWidth, panelHeight);
+            LayoutNewValuesPanel(rightWidth, panelHeight);
+        }
+
+        private void LayoutDefaultValuesPanel(int panelWidth, int panelHeight)
+        {
+            const int innerMargin = 12;
+            const int sectionGap = 8;
+            const int headerSpace = 28;
+            int innerWidth = Math.Max(180, panelWidth - innerMargin * 2 - 4);
+            int availableHeight = Math.Max(0, panelHeight - headerSpace - sectionGap * 2);
+            int sectionHeight = Math.Max(100, availableHeight / 3);
+
+            ConfigureDefaultChart(picDefaultLoadingDistribution, innerMargin, headerSpace, innerWidth, sectionHeight);
+            ConfigureDefaultChart(
+                picDefaultWeighingDistribution,
+                innerMargin,
+                headerSpace + sectionHeight + sectionGap,
+                innerWidth,
+                sectionHeight);
+            ConfigureDefaultChart(
+                picDefaultTravelDistribution,
+                innerMargin,
+                headerSpace + (sectionHeight + sectionGap) * 2,
+                innerWidth,
+                Math.Max(100, panelHeight - headerSpace - (sectionHeight + sectionGap) * 2 - innerMargin));
+        }
+
+        private static void ConfigureDefaultChart(PictureBox picture, int x, int y, int width, int height)
+        {
+            if (picture == null)
+                return;
+
+            picture.SetBounds(x, y, width, height);
+            picture.SizeMode = PictureBoxSizeMode.Zoom;
+            picture.BorderStyle = BorderStyle.FixedSingle;
+            picture.BackColor = AppLayoutMetrics.PanelBackColor;
+        }
+
+        private void LayoutNewValuesPanel(int panelWidth, int panelHeight)
+        {
+            const int innerMargin = 12;
+            const int columnGap = 12;
+            const int labelTop = 20;
+            const int labelHeight = 22;
+            const int gridTop = labelTop + labelHeight + 4;
+            const int buttonHeight = AppLayoutMetrics.PrimaryButtonHeight;
+            const int gridBottomGap = 16;
+            int contentWidth = Math.Max(360, panelWidth - innerMargin * 2);
+            int columnWidth = Math.Max(150, (contentWidth - columnGap * 2) / 3);
+            int gridHeight = EstimateDistributionGridHeight(
+                gridLoadingDistribution,
+                gridWeighingDistribution,
+                gridTravelingDistribution);
+            int buttonY = gridTop + gridHeight + gridBottomGap;
+            int buttonWidth = Math.Max(160, (contentWidth - columnGap) / 2);
+
+            PlaceDistributionColumn(lblLoadingDistributionHeader, gridLoadingDistribution, innerMargin, labelTop, labelHeight, gridTop, columnWidth, gridHeight);
+            PlaceDistributionColumn(
+                lblWeighingDistributionHeader,
+                gridWeighingDistribution,
+                innerMargin + columnWidth + columnGap,
+                labelTop,
+                labelHeight,
+                gridTop,
+                columnWidth,
+                gridHeight);
+            PlaceDistributionColumn(
+                lblTravelingDistributionHeader,
+                gridTravelingDistribution,
+                innerMargin + (columnWidth + columnGap) * 2,
+                labelTop,
+                labelHeight,
+                gridTop,
+                columnWidth,
+                gridHeight);
+
+            btnAddDistributionsToSimulation.SetBounds(innerMargin, buttonY, buttonWidth, buttonHeight);
+            btnClearDistributionGrids.SetBounds(innerMargin + buttonWidth + columnGap, buttonY, buttonWidth, buttonHeight);
+        }
+
+        private const int GridHeaderHeightPx = 28;
+        private const int GridRowHeightPx = 24;
+        private const int GridPaddingPx = 6;
+        private const int GridMinHeightPx = 130;
+        private const int GridMaxHeightPx = 190;
+
+        private static int EstimateDistributionGridHeight(params DataGridView[] grids)
+        {
+            int maxRows = 4;
+            foreach (DataGridView grid in grids)
+            {
+                if (grid == null)
+                    continue;
+
+                int rowCount = grid.AllowUserToAddRows ? grid.Rows.Count - 1 : grid.Rows.Count;
+                maxRows = Math.Max(maxRows, Math.Max(1, rowCount));
+            }
+
+            return Math.Clamp(
+                GridHeaderHeightPx + (maxRows * GridRowHeightPx) + GridPaddingPx,
+                GridMinHeightPx,
+                GridMaxHeightPx);
+        }
+
+        private static void PlaceDistributionColumn(
+            Label header,
+            DataGridView grid,
+            int x,
+            int labelTop,
+            int labelHeight,
+            int gridTop,
+            int width,
+            int height)
+        {
+            if (header != null)
+            {
+                header.AutoSize = false;
+                header.AutoEllipsis = true;
+                header.SetBounds(x, labelTop, width, labelHeight);
+                header.TextAlign = ContentAlignment.MiddleLeft;
+            }
+
+            if (grid == null)
+                return;
+
+            grid.SetBounds(x, gridTop, width, height);
+            grid.Anchor = AnchorStyles.Top | AnchorStyles.Left;
         }
 
         private void LayoutSimulationTab()
         {
-            if (tabPage3 == null)
+            if (tabSimulation == null)
                 return;
 
-            const int margin = 10;
-            int leftWidth = InputGroupLayout.RequiredWidth;
-            const int gap = 16;
+            var layout = new SplitTabLayout(tabSimulation.ClientSize.Width, tabSimulation.ClientSize.Height, InputGroupLayout.RequiredWidth);
             const int inputHeight = 210;
-            int rightX = margin + leftWidth + gap;
-            int rightWidth = Math.Max(480, tabPage3.ClientSize.Width - rightX - margin);
-            int tabHeight = Math.Max(680, tabPage3.ClientSize.Height);
+            int contentTop = AppLayoutMetrics.Margin + AppLayoutMetrics.HeroImageHeight + AppLayoutMetrics.SectionGap;
 
-            picbxsimulation.SetBounds(margin, margin, leftWidth, 175);
-            groupBox5.SetBounds(margin, 195, leftWidth, inputHeight);
+            picSimulationHeader.Bounds = layout.LeftColumn(AppLayoutMetrics.Margin, AppLayoutMetrics.HeroImageHeight);
+            grpSimulationInputs.SetBounds(layout.Margin, contentTop, layout.LeftWidth, inputHeight);
 
-            int buttonY = 195 + inputHeight + 12;
-            btnSim.SetBounds(margin, buttonY, 250, 40);
-            btnClear.SetBounds(margin + 260, buttonY, 250, 40);
-            _btnStopSim.SetBounds(margin + 520, buttonY, 120, 40);
+            int buttonY = contentTop + inputHeight + AppLayoutMetrics.SectionGap;
+            ActionButtonStripLayout.ApplyTwoRowPrimaryActions(
+                layout.LeftWidth,
+                buttonY,
+                _btnRunSimDemo,
+                btnRunSimulation,
+                btnClearSimulationFields,
+                _btnStopSim);
 
-            chart2.SetBounds(rightX, margin, rightWidth, Math.Min(320, tabHeight - margin * 2));
-            int outputTop = Math.Max(340, margin + 320);
-            int outputHeight = Math.Max(170, tabHeight - outputTop - margin);
-            groupBox6.SetBounds(rightX, outputTop, 300, outputHeight);
-            groupBox7.SetBounds(rightX + 310, outputTop, Math.Max(420, rightWidth - 310), outputHeight);
+            Rectangle chartArea = layout.ChartArea(AppLayoutMetrics.Margin, 0.42);
+            chartSimulationCosts.Bounds = chartArea;
+
+            Rectangle outputArea = layout.StackedPanelArea(chartArea);
+            int utilizationWidth = Math.Min(300, outputArea.Width / 2 - AppLayoutMetrics.SectionGap);
+            grpSimulationUtilizationOutputs.SetBounds(outputArea.X, outputArea.Y, utilizationWidth, outputArea.Height);
+            grpSimulationCostOutputs.SetBounds(
+                outputArea.X + utilizationWidth + AppLayoutMetrics.SectionGap,
+                outputArea.Y,
+                Math.Max(280, outputArea.Width - utilizationWidth - AppLayoutMetrics.SectionGap),
+                outputArea.Height);
         }
 
         private void LayoutGeneticAlgorithmTab()
         {
-            if (_gaMethodInfoPanel == null || tabPage1 == null)
+            if (_gaMethodInfoPanel == null || tabGeneticAlgorithm == null)
                 return;
 
-            const int margin = 10;
-            int leftWidth = InputGroupLayout.RequiredWidth;
-            const int gap = 16;
+            var layout = new SplitTabLayout(tabGeneticAlgorithm.ClientSize.Width, tabGeneticAlgorithm.ClientSize.Height, InputGroupLayout.RequiredWidth);
             const int inputHeight = 310;
-            int rightX = margin + leftWidth + gap;
-            int rightWidth = Math.Max(480, tabPage1.ClientSize.Width - rightX - margin);
-            int tabHeight = Math.Max(680, tabPage1.ClientSize.Height);
+            int contentTop = AppLayoutMetrics.Margin + AppLayoutMetrics.HeroImageHeight + AppLayoutMetrics.SectionGap;
 
-            picbxalgo.SetBounds(margin, margin, leftWidth, 175);
-            groupBox1.SetBounds(margin, 195, leftWidth, inputHeight);
+            picGaHeader.Bounds = layout.LeftColumn(AppLayoutMetrics.Margin, AppLayoutMetrics.HeroImageHeight);
+            grpGaInputs.SetBounds(layout.Margin, contentTop, layout.LeftWidth, inputHeight);
 
-            int buttonY = 195 + inputHeight + 12;
-            button1.SetBounds(margin, buttonY, 250, 52);
-            btnRunGenetic.SetBounds(margin + 260, buttonY, 250, 52);
-            _btnStopGenetic.SetBounds(margin + 520, buttonY, 120, 52);
+            int buttonY = contentTop + inputHeight + AppLayoutMetrics.SectionGap;
+            ActionButtonStripLayout.ApplyTwoRowPrimaryActions(
+                layout.LeftWidth,
+                buttonY,
+                btnRunGaDemo,
+                btnRunGeneticAlgorithm,
+                btnClearGaFields,
+                _btnStopGenetic);
 
-            chart1.SetBounds(rightX, margin, rightWidth, 215);
-            label3.SetBounds(rightX, 228, 130, 18);
-            progressBar1.SetBounds(rightX + 135, 225, Math.Max(200, rightWidth - 135), 22);
+            Rectangle chartArea = layout.ChartArea(AppLayoutMetrics.Margin, 0.28);
+            chartGaFitness.Bounds = chartArea;
+            lblGaProgressCaption.SetBounds(chartArea.X, chartArea.Bottom + 6, 130, 18);
+            progressGaRun.SetBounds(chartArea.X + 135, chartArea.Bottom + 3, Math.Max(200, chartArea.Width - 135), 22);
 
-            const int infoTop = 258;
-            int infoHeight = Math.Max(300, tabHeight - infoTop - margin);
-            _gaMethodInfoPanel.SetBounds(rightX, infoTop, rightWidth, infoHeight);
+            Rectangle infoArea = layout.StackedPanelArea(chartArea, gap: 28);
+            _gaMethodInfoPanel.Bounds = infoArea;
             _gaMethodInfoPanel.BringToFront();
         }
 
@@ -313,9 +561,19 @@ namespace GeneticAlgorithm.Desktop
 
         private static void SetPanelRunning(PhaseResultPanel panel, bool running, PhaseResultPanel except)
         {
-            if (panel == null || panel == except)
+            if (panel == null)
                 return;
-            panel.SetRunning(running);
+
+            if (!running)
+            {
+                panel.SetRunning(false);
+                return;
+            }
+
+            if (panel == except)
+                panel.SetRunning(true);
+            else
+                panel.SetBusy(true);
         }
 
         private void ApplyGaComparisonResult(OptimizationRunResult results)

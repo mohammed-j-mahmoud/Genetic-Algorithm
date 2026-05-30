@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using GeneticAlgorithm.Application.Models;
+using GeneticAlgorithm.Desktop.Views.Layout;
 
 namespace GeneticAlgorithm.Desktop.Views
 {
@@ -27,8 +28,9 @@ namespace GeneticAlgorithm.Desktop.Views
             string resultsGroupTitle)
         {
             Dock = DockStyle.Fill;
-            Padding = new Padding(16);
+            Padding = new Padding(AppLayoutMetrics.Margin + 4);
             AutoScroll = true;
+            BackColor = AppLayoutMetrics.FormBackColor;
 
             var layout = new TableLayoutPanel
             {
@@ -42,9 +44,9 @@ namespace GeneticAlgorithm.Desktop.Views
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            _titleFont = new Font(Font.FontFamily, 12F, FontStyle.Bold);
+            _titleFont = AppLayoutMetrics.SectionTitleFont;
             var lblTitle = new Label
             {
                 Text = title,
@@ -53,14 +55,14 @@ namespace GeneticAlgorithm.Desktop.Views
                 Margin = new Padding(0, 0, 0, 8)
             };
 
-            var lblSummary = CreateTextLabel(summary);
-            var lblHowItWorks = CreateTextLabel(howItWorks);
+            var lblSummary = CreateTextLabel(summary, muted: false);
+            var lblHowItWorks = CreateTextLabel(howItWorks, muted: true);
 
             var runRow = new FlowLayoutPanel
             {
                 AutoSize = true,
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
+                WrapContents = true,
                 Margin = new Padding(0, 8, 0, 8)
             };
 
@@ -68,20 +70,22 @@ namespace GeneticAlgorithm.Desktop.Views
             {
                 Text = "Run " + title,
                 AutoSize = true,
-                MinimumSize = new Size(160, 34),
-                Margin = new Padding(0, 0, 12, 0)
+                MinimumSize = new Size(180, AppLayoutMetrics.PrimaryButtonHeight),
+                Margin = new Padding(0, 0, AppLayoutMetrics.ButtonGap, AppLayoutMetrics.ButtonGap)
             };
             _btnRun.Click += (_, __) => RunRequested?.Invoke(this, EventArgs.Empty);
+            UiTheme.StylePrimaryButton(_btnRun);
 
             _btnStop = new Button
             {
-                Text = "Stop",
+                Text = UiCopy.Stop,
                 AutoSize = true,
-                MinimumSize = new Size(100, 34),
+                MinimumSize = new Size(AppLayoutMetrics.StopButtonWidth, AppLayoutMetrics.SecondaryButtonHeight),
                 Enabled = false,
-                Margin = new Padding(0, 0, 12, 0)
+                Margin = new Padding(0, 0, AppLayoutMetrics.ButtonGap, AppLayoutMetrics.ButtonGap)
             };
             _btnStop.Click += (_, __) => StopRequested?.Invoke(this, EventArgs.Empty);
+            UiTheme.StyleSecondaryButton(_btnStop);
 
             _progress = new ProgressBar
             {
@@ -95,11 +99,11 @@ namespace GeneticAlgorithm.Desktop.Views
             runRow.Controls.Add(_btnStop);
             runRow.Controls.Add(_progress);
 
-            _lblStats = CreateTextLabel("Simulations: —   |   Cache hits: —   |   Combinations: —");
+            _lblStats = CreateTextLabel("Simulations: —   |   Cache hits: —   |   Combinations: —", muted: true);
 
             _results = new BestResultSummaryGroup(resultsGroupTitle)
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 MinimumSize = new Size(500, 118),
                 Margin = new Padding(0, 8, 0, 0)
             };
@@ -121,6 +125,11 @@ namespace GeneticAlgorithm.Desktop.Views
             _progress.Visible = running;
             if (running)
                 _progress.Value = 0;
+        }
+
+        public void SetBusy(bool busy)
+        {
+            _btnRun.Enabled = !busy;
         }
 
         public void ReportProgress(int percent)
@@ -154,20 +163,22 @@ namespace GeneticAlgorithm.Desktop.Views
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && !ReferenceEquals(_titleFont, AppLayoutMetrics.SectionTitleFont))
                 _titleFont.Dispose();
             base.Dispose(disposing);
         }
 
-        private static Label CreateTextLabel(string text)
+        private static Label CreateTextLabel(string text, bool muted)
         {
-            return new Label
+            var label = new Label
             {
                 Text = text,
                 AutoSize = true,
                 MaximumSize = new Size(980, 0),
                 Margin = new Padding(0, 0, 0, 4)
             };
+            UiTheme.StyleSectionLabel(label, title: !muted);
+            return label;
         }
     }
 }

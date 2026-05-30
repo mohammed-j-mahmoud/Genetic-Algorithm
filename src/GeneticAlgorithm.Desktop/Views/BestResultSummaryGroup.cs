@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using GeneticAlgorithm.Core.Genetics;
+using GeneticAlgorithm.Desktop.Views.Layout;
 
 namespace GeneticAlgorithm.Desktop.Views
 {
@@ -20,6 +21,7 @@ namespace GeneticAlgorithm.Desktop.Views
         {
             Text = title;
             Padding = new Padding(12, 8, 12, 8);
+            Font = AppLayoutMetrics.CaptionFont;
             MinimumSize = new Size(400, 110);
             Height = 118;
 

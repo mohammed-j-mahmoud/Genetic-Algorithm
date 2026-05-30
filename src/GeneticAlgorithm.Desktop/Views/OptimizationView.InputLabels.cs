@@ -1,3 +1,4 @@
+using System.Windows.Forms;
 using GeneticAlgorithm.Desktop.Views;
 
 namespace GeneticAlgorithm.Desktop
@@ -6,52 +7,58 @@ namespace GeneticAlgorithm.Desktop
     {
         private void ApplyInputFieldLabels()
         {
-            label16.Text = InputFieldLabels.MaterialVolume;
-            label19.Text = InputFieldLabels.LoadPerTruck;
-            label20.Text = InputFieldLabels.CostPerTruck;
-            label22.Text = InputFieldLabels.CostPerLoader;
-            label21.Text = InputFieldLabels.CostPerScaler;
-            label18.Text = InputFieldLabels.ProjectDuration;
-            label17.Text = InputFieldLabels.CostOfDelay;
-            label15.Text = InputFieldLabels.MaxTrucks;
-            label7.Text = InputFieldLabels.MaxLoaders;
-            label6.Text = InputFieldLabels.MaxScalers;
-            label2.Text = InputFieldLabels.Population;
-            label1.Text = InputFieldLabels.LastGeneration;
-            label5.Text = InputFieldLabels.MutationRate;
+            lblGaMaterialVolume.Text = InputFieldLabels.MaterialVolume;
+            lblGaLoadPerTruck.Text = InputFieldLabels.LoadPerTruck;
+            lblGaTruckCostPerDay.Text = InputFieldLabels.CostPerTruck;
+            lblGaLoaderCostPerDay.Text = InputFieldLabels.CostPerLoader;
+            lblGaScalerCostPerDay.Text = InputFieldLabels.CostPerScaler;
+            lblGaProjectDuration.Text = InputFieldLabels.ProjectDuration;
+            lblGaDelayCostPerDay.Text = InputFieldLabels.CostOfDelay;
+            lblGaMaxTrucks.Text = InputFieldLabels.MaxTrucks;
+            lblGaMaxLoaders.Text = InputFieldLabels.MaxLoaders;
+            lblGaMaxScalers.Text = InputFieldLabels.MaxScalers;
+            lblGaPopulation.Text = InputFieldLabels.Population;
+            lblGaGenerations.Text = InputFieldLabels.LastGeneration;
+            lblGaMutationRate.Text = InputFieldLabels.MutationRate;
 
-            label12.Text = InputFieldLabels.MaterialVolume;
-            label23.Text = InputFieldLabels.LoadPerTruck;
-            label24.Text = InputFieldLabels.CostPerTruck;
-            label26.Text = InputFieldLabels.CostPerLoader;
-            label25.Text = InputFieldLabels.CostPerScaler;
-            label14.Text = InputFieldLabels.ProjectDuration;
-            label13.Text = InputFieldLabels.CostOfDelay;
-            label11.Text = InputFieldLabels.TruckCount;
-            label10.Text = InputFieldLabels.LoaderCount;
-            label9.Text = InputFieldLabels.ScalerCount;
+            lblSimMaterialVolume.Text = InputFieldLabels.MaterialVolume;
+            lblSimLoadPerTruck.Text = InputFieldLabels.LoadPerTruck;
+            lblSimTruckCostPerDay.Text = InputFieldLabels.CostPerTruck;
+            lblSimLoaderCostPerDay.Text = InputFieldLabels.CostPerLoader;
+            lblSimScalerCostPerDay.Text = InputFieldLabels.CostPerScaler;
+            lblSimProjectDuration.Text = InputFieldLabels.ProjectDuration;
+            lblSimDelayCostPerDay.Text = InputFieldLabels.CostOfDelay;
+            lblSimTruckCount.Text = InputFieldLabels.TruckCount;
+            lblSimLoaderCount.Text = InputFieldLabels.LoaderCount;
+            lblSimScalerCount.Text = InputFieldLabels.ScalerCount;
 
-            label30.Text = InputFieldLabels.ProjectDurationOutput;
-            label44.Text = InputFieldLabels.DaysDelayed;
-            label27.Text = InputFieldLabels.TruckCostOutput;
-            label34.Text = InputFieldLabels.LoaderCostOutput;
-            label33.Text = InputFieldLabels.ScalerCostOutput;
-            label29.Text = InputFieldLabels.DelayCostOutput;
-            label45.Text = InputFieldLabels.TotalCostOutput;
+            lblSimProjectDurationCaption.Text = InputFieldLabels.ProjectDurationOutput;
+            lblSimDaysDelayedCaption.Text = InputFieldLabels.DaysDelayed;
+            lblSimTruckCostCaption.Text = InputFieldLabels.TruckCostOutput;
+            lblSimLoaderCostCaption.Text = InputFieldLabels.LoaderCostOutput;
+            lblSimScalerCostCaption.Text = InputFieldLabels.ScalerCostOutput;
+            lblSimDelayCostCaption.Text = InputFieldLabels.DelayCostOutput;
+            lblSimTotalCostCaption.Text = InputFieldLabels.TotalCostOutput;
 
-            label28.Text = InputFieldLabels.UtilizationTrucks;
-            label31.Text = InputFieldLabels.UtilizationLoaders;
-            label32.Text = InputFieldLabels.UtilizationScalers;
+            lblSimUtilTrucksCaption.Text = InputFieldLabels.UtilizationTrucks;
+            lblSimUtilLoadersCaption.Text = InputFieldLabels.UtilizationLoaders;
+            lblSimUtilScalersCaption.Text = InputFieldLabels.UtilizationScalers;
         }
 
         private void ApplyDistributionColumnHeaders()
         {
-            dataGridView1.Columns[0].HeaderText = "Time (min)";
-            dataGridView2.Columns[0].HeaderText = "Time (min)";
-            dataGridView3.Columns[0].HeaderText = "Time (min)";
-            dataGridView1.Columns[1].HeaderText = "Probability";
-            dataGridView2.Columns[1].HeaderText = "Probability";
-            dataGridView3.Columns[1].HeaderText = "Probability";
+            ApplyDistributionColumnHeaders(gridLoadingDistribution);
+            ApplyDistributionColumnHeaders(gridWeighingDistribution);
+            ApplyDistributionColumnHeaders(gridTravelingDistribution);
+        }
+
+        private static void ApplyDistributionColumnHeaders(DataGridView grid)
+        {
+            if (grid == null || grid.Columns.Count < 2)
+                return;
+
+            grid.Columns[0].HeaderText = UiCopy.DistributionTimeColumn;
+            grid.Columns[1].HeaderText = UiCopy.DistributionProbabilityColumn;
         }
     }
 }

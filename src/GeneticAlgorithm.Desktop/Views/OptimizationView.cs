@@ -65,7 +65,7 @@ namespace GeneticAlgorithm.Desktop
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void button2_Click(object sender, EventArgs e)
+        private async void btnRunGeneticAlgorithm_Click(object sender, EventArgs e)
         {
             try
             {
@@ -84,33 +84,33 @@ namespace GeneticAlgorithm.Desktop
         {
             parameters = null;
 
-            if (!FormInputParser.TryParseInt(txtbxPopulationNo.Text, "Population size", out int populationSize, showErrors))
+            if (!FormInputParser.TryParseInt(txtGaPopulation.Text, "Population size", out int populationSize, showErrors))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxmaterialAlgo.Text, "Material volume", out float numCoal, showErrors))
+            if (!FormInputParser.TryParseFloat(txtGaMaterialVolume.Text, "Material volume", out float numCoal, showErrors))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxlodrprtrukAlgo.Text, "Truck load", out float numTruckLoad, showErrors) || numTruckLoad <= 0f)
+            if (!FormInputParser.TryParseFloat(txtGaLoadPerTruck.Text, "Truck load", out float numTruckLoad, showErrors) || numTruckLoad <= 0f)
             {
                 if (showErrors)
                     MessageBox.Show("Truck load must be greater than zero.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (!FormInputParser.TryParseFloat(txtbxcostprtrukAlgo.Text, "Truck cost per day", out float costTruckPerDay, showErrors))
+            if (!FormInputParser.TryParseFloat(txtGaTruckCostPerDay.Text, "Truck cost per day", out float costTruckPerDay, showErrors))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxCostPrLoderAlgo.Text, "Loader cost per day", out float costLoaderPerDay, showErrors))
+            if (!FormInputParser.TryParseFloat(txtGaLoaderCostPerDay.Text, "Loader cost per day", out float costLoaderPerDay, showErrors))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxCostPrScalerAlgo.Text, "Scaler cost per day", out float costScalerPerDay, showErrors))
+            if (!FormInputParser.TryParseFloat(txtGaScalerCostPerDay.Text, "Scaler cost per day", out float costScalerPerDay, showErrors))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxProjectDurationAlgo.Text, "Project duration", out float projectDuration, showErrors))
+            if (!FormInputParser.TryParseFloat(txtGaProjectDuration.Text, "Project duration", out float projectDuration, showErrors))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxCostOfDelayAlgo.Text, "Cost of delay", out float costDelayPerDay, showErrors))
+            if (!FormInputParser.TryParseFloat(txtGaDelayCostPerDay.Text, "Cost of delay", out float costDelayPerDay, showErrors))
                 return false;
-            if (!FormInputParser.TryParseInt(txtbxTrukNoMxAlgo.Text, "Max trucks", out int maxTrucks, showErrors))
+            if (!FormInputParser.TryParseInt(txtGaMaxTrucks.Text, "Max trucks", out int maxTrucks, showErrors))
                 return false;
-            if (!FormInputParser.TryParseInt(txtbxScalerNoMxAlgo.Text, "Max scalers", out int maxScalers, showErrors))
+            if (!FormInputParser.TryParseInt(txtGaMaxScalers.Text, "Max scalers", out int maxScalers, showErrors))
                 return false;
-            if (!FormInputParser.TryParseInt(txtbxLosderNoMxAlgo.Text, "Max loaders", out int maxLoaders, showErrors))
+            if (!FormInputParser.TryParseInt(txtGaMaxLoaders.Text, "Max loaders", out int maxLoaders, showErrors))
                 return false;
-            if (!FormInputParser.TryParseInt(txtbxGenerationNo.Text, "Generation count", out int lastGeneration, showErrors))
+            if (!FormInputParser.TryParseInt(txtGaGenerations.Text, "Generation count", out int lastGeneration, showErrors))
                 return false;
             if (lastGeneration > 100_000)
             {
@@ -118,7 +118,7 @@ namespace GeneticAlgorithm.Desktop
                     MessageBox.Show("Generation count cannot exceed 100,000.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (!FormInputParser.TryParseMutationRate(txtbxMutationRate.Text, out double mutationRate, showErrors))
+            if (!FormInputParser.TryParseMutationRate(txtGaMutationRate.Text, out double mutationRate, showErrors))
                 return false;
             if (maxTrucks > SimulationParameters.MaxResourceCount
                 || maxLoaders > SimulationParameters.MaxResourceCount
@@ -195,30 +195,29 @@ namespace GeneticAlgorithm.Desktop
                 _runCancellation = new CancellationTokenSource();
                 CancellationToken cancellationToken = _runCancellation.Token;
 
-                chart1.Series[GaFitnessChartSeries].Points.Clear();
-                progressBar1.Visible = true;
-                progressBar1.Minimum = 1;
-                progressBar1.Maximum = parameters.LastGeneration;
-                progressBar1.Value = 1;
+                chartGaFitness.Series[GaFitnessChartSeries].Points.Clear();
+                progressGaRun.Visible = true;
+                progressGaRun.Minimum = 1;
+                progressGaRun.Maximum = parameters.LastGeneration;
+                progressGaRun.Value = 1;
 
                 var progress = new Progress<GaGenerationReport>(report =>
                 {
                     if (IsDisposed)
                         return;
 
-                    int generation = Math.Min(report.Generation, progressBar1.Maximum);
-                    progressBar1.Value = Math.Max(progressBar1.Minimum, generation);
+                    int generation = Math.Min(report.Generation, progressGaRun.Maximum);
+                    progressGaRun.Value = Math.Max(progressGaRun.Minimum, generation);
 
                     if (report.UpdateChart)
-                        chart1.Series[GaFitnessChartSeries].Points.AddXY(report.Generation, report.Fitness);
+                        chartGaFitness.Series[GaFitnessChartSeries].Points.AddXY(report.Generation, report.Fitness);
                 });
 
                 OptimizationRunResult results = await Task.Run(
                     () => RunGeneticAlgorithmCore(parameters, progress, cancellationToken),
                     cancellationToken).ConfigureAwait(true);
 
-                progressBar1.Value = progressBar1.Maximum;
-                ApplyGeneticAlgorithmResults(results);
+                progressGaRun.Value = progressGaRun.Maximum;
                 ApplyGaComparisonResult(results);
                 string completion = results.StoppedEarly
                     ? "GA stopped early. Best result so far is shown."
@@ -235,7 +234,7 @@ namespace GeneticAlgorithm.Desktop
             }
             finally
             {
-                progressBar1.Visible = false;
+                progressGaRun.Visible = false;
                 SetGeneticAlgorithmControlsEnabled(true);
                 SetRunStopButtonsEnabled(running: false, geneticTab: false, simulationTab: false);
                 _runCancellation?.Dispose();
@@ -244,44 +243,60 @@ namespace GeneticAlgorithm.Desktop
             }
         }
 
-        private void ApplyGeneticAlgorithmResults(OptimizationRunResult results)
-        {
-            if (results?.BestChromosome == null)
-                return;
-
-            lblTruckNoAlgo.Text = results.BestChromosome.Genes[0].ToString();
-            lblLoaderNoAlgo.Text = results.BestChromosome.Genes[1].ToString();
-            lblScalerNoAlgo.Text = results.BestChromosome.Genes[2].ToString();
-            lblUtiliLoaderAlgo.Text = Math.Round(results.BestChromosome.utilLoader, 3).ToString();
-            lblUtiliScalerAlgo.Text = Math.Round(results.BestChromosome.utilScaler, 3).ToString();
-            lblUtiliTruckAlgo.Text = Math.Round(results.BestChromosome.utilTruck, 3).ToString();
-            lblDaysDelayedAlgo.Text = results.BestChromosome.DaysofDelay.ToString();
-            lblCostodDelayAlgo.Text = results.BestChromosome.CostofDelay.ToString();
-            lblTotalDaysAlgo.Text = results.BestChromosome.TotalDays.ToString();
-            lblTotalCostAlgo.Text = results.BestChromosome.TotalCost.ToString();
-        }
-
         private void SetGeneticAlgorithmControlsEnabled(bool enabled)
         {
-            btnRunGenetic.Enabled = enabled;
-            button1.Enabled = enabled;
-            btnSim.Enabled = enabled;
+            btnRunGeneticAlgorithm.Enabled = enabled;
+            btnRunGaDemo.Enabled = enabled;
+            btnRunSimulation.Enabled = enabled;
+            btnClearGaFields.Enabled = enabled;
+            if (_btnRunSimDemo != null)
+                _btnRunSimDemo.Enabled = enabled;
             UseWaitCursor = !enabled;
         }
 
         private void OptimizationView_Load(object sender, EventArgs e)
         {
-            picbxalgo.Enabled = true;
-            ApplyDistributionColumnHeaders();
-         }
+            picGaHeader.Enabled = true;
+        }
 
-        private void button6_Click(object sender, EventArgs e)
+        private void EnsureDefaultDistributionsPopulated()
+        {
+            if (!IsDistributionGridEmpty(gridLoadingDistribution) &&
+                !IsDistributionGridEmpty(gridWeighingDistribution) &&
+                !IsDistributionGridEmpty(gridTravelingDistribution))
+            {
+                return;
+            }
+
+            ApplyDefaultDistributionsToForm();
+            LayoutDistributionTab();
+        }
+
+        private static bool IsDistributionGridEmpty(DataGridView grid)
+        {
+            if (grid == null || grid.Rows.Count == 0)
+                return true;
+
+            foreach (DataGridViewRow row in grid.Rows)
+            {
+                if (row.IsNewRow)
+                    continue;
+
+                object timeValue = row.Cells.Count > 0 ? row.Cells[0].Value : null;
+                if (timeValue != null && !string.IsNullOrWhiteSpace(timeValue.ToString()))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void btnAddDistributionsToSimulation_Click(object sender, EventArgs e)
         {
             try
             {
-                loadingElements = DistributionGridReader.Read(dataGridView1, "Loading");
-                weighingElements = DistributionGridReader.Read(dataGridView2, "Weighing");
-                travelingElements = DistributionGridReader.Read(dataGridView3, "Traveling");
+                loadingElements = DistributionGridReader.Read(gridLoadingDistribution, "Loading");
+                weighingElements = DistributionGridReader.Read(gridWeighingDistribution, "Weighing");
+                travelingElements = DistributionGridReader.Read(gridTravelingDistribution, "Traveling");
                 _viewModel.LoadingDistribution.Clear();
                 _viewModel.LoadingDistribution.AddRange(loadingElements);
                 _viewModel.WeighingDistribution.Clear();
@@ -362,23 +377,31 @@ namespace GeneticAlgorithm.Desktop
                 }
             }
         }
-        /// <summary>
-        /// this is simulation button 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void button7_Click(object sender, EventArgs e)
+        private async void btnRunSimulation_Click(object sender, EventArgs e)
+        {
+            if (!TryReadSimulationInputs(out SimulationRunInputs inputs))
+                return;
+
+            await RunSimulationAsync(inputs).ConfigureAwait(true);
+        }
+
+        private async Task RunSimulationDemoAsync()
+        {
+            SimulationRunInputs inputs = CreateDemoSimulationRunInputs();
+            ApplySimulationRunInputsToForm(inputs);
+            ApplyDefaultDistributionsToForm();
+            await RunSimulationAsync(inputs).ConfigureAwait(true);
+        }
+
+        private async Task RunSimulationAsync(SimulationRunInputs inputs)
         {
             if (_simRunning)
                 return;
 
             try
             {
-                if (!TryReadSimulationInputs(out SimulationRunInputs inputs))
-                    return;
-
                 _simRunning = true;
-                btnClear.Enabled = false;
+                btnClearSimulationFields.Enabled = false;
                 SetGeneticAlgorithmControlsEnabled(false);
                 SetRunStopButtonsEnabled(running: true, geneticTab: false, simulationTab: true);
                 UseWaitCursor = true;
@@ -420,7 +443,7 @@ namespace GeneticAlgorithm.Desktop
             }
             finally
             {
-                btnClear.Enabled = true;
+                btnClearSimulationFields.Enabled = true;
                 SetGeneticAlgorithmControlsEnabled(true);
                 SetRunStopButtonsEnabled(running: false, geneticTab: false, simulationTab: false);
                 _runCancellation?.Dispose();
@@ -448,37 +471,37 @@ namespace GeneticAlgorithm.Desktop
         {
             inputs = new SimulationRunInputs();
 
-            if (!FormInputParser.TryParseFloat(txtbxmaterialsim.Text, "Material volume", out float numCoal))
+            if (!FormInputParser.TryParseFloat(txtSimMaterialVolume.Text, "Material volume", out float numCoal))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxTrukNO.Text, "Truck count", out float numTruck) || numTruck <= 0f)
+            if (!FormInputParser.TryParseFloat(txtSimTruckCount.Text, "Truck count", out float numTruck) || numTruck <= 0f)
             {
                 MessageBox.Show("Truck count must be greater than zero.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (!FormInputParser.TryParseFloat(txtbxlodrprtruk.Text, "Truck load", out float numTruckLoad) || numTruckLoad <= 0f)
+            if (!FormInputParser.TryParseFloat(txtSimLoadPerTruck.Text, "Truck load", out float numTruckLoad) || numTruckLoad <= 0f)
             {
                 MessageBox.Show("Truck load must be greater than zero.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (!FormInputParser.TryParseFloat(txtbxcostprtruk.Text, "Truck cost per day", out float costTruckPerDay))
+            if (!FormInputParser.TryParseFloat(txtSimTruckCostPerDay.Text, "Truck cost per day", out float costTruckPerDay))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxLoaderNo.Text, "Loader count", out float numLoader) || numLoader < 1f)
+            if (!FormInputParser.TryParseFloat(txtSimLoaderCount.Text, "Loader count", out float numLoader) || numLoader < 1f)
             {
                 MessageBox.Show("Loader count must be at least 1.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (!FormInputParser.TryParseFloat(txtbxCostPrLoder.Text, "Loader cost per day", out float costLoaderPerDay))
+            if (!FormInputParser.TryParseFloat(txtSimLoaderCostPerDay.Text, "Loader cost per day", out float costLoaderPerDay))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxScalerNo.Text, "Scaler count", out float numScaler) || numScaler < 1f)
+            if (!FormInputParser.TryParseFloat(txtSimScalerCount.Text, "Scaler count", out float numScaler) || numScaler < 1f)
             {
                 MessageBox.Show("Scaler count must be at least 1.", "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (!FormInputParser.TryParseFloat(txtbxCostPrScaler.Text, "Scaler cost per day", out float costScalerPerDay))
+            if (!FormInputParser.TryParseFloat(txtSimScalerCostPerDay.Text, "Scaler cost per day", out float costScalerPerDay))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxProjectDuration.Text, "Project duration", out float projectDuration))
+            if (!FormInputParser.TryParseFloat(txtSimProjectDuration.Text, "Project duration", out float projectDuration))
                 return false;
-            if (!FormInputParser.TryParseFloat(txtbxCostOfDelay.Text, "Cost of delay", out float costOfDelay))
+            if (!FormInputParser.TryParseFloat(txtSimDelayCostPerDay.Text, "Cost of delay", out float costOfDelay))
                 return false;
 
             inputs.NumCoal = numCoal;
@@ -496,43 +519,90 @@ namespace GeneticAlgorithm.Desktop
 
         private void ApplySimulationResults(DumpTruckSimulation.SimulationOutput results)
         {
-            chart2.Series["Actual Cost"].Points.Clear();
-            chart2.Series["Delay Cost"].Points.Clear();
+            chartSimulationCosts.Series["Actual Cost"].Points.Clear();
+            chartSimulationCosts.Series["Delay Cost"].Points.Clear();
 
-            lblLoaderCost.Text = results.LoaderCost.ToString();
-            lblScalerCost.Text = results.ScalerCost.ToString();
-            lblTruckCost.Text = results.TruckCost.ToString();
-            lblDelayCost.Text = results.DelayCost.ToString();
-            lblprojectDuration.Text = results.TotalDays.ToString();
-            lbltotalcost.Text = results.TotalCost.ToString();
-            lbldaysofdelayed.Text = results.DelayDays.ToString();
-            lblUtilScaler.Text = Math.Round(results.ScalerUtilization, 3).ToString();
-            UtilLoader.Text = Math.Round(results.LoaderUtilization, 3).ToString();
-            UtilTrucks.Text = Math.Round(results.TruckUtilization, 3).ToString();
+            lblSimLoaderCostValue.Text = results.LoaderCost.ToString("N2");
+            lblSimScalerCostValue.Text = results.ScalerCost.ToString("N2");
+            lblSimTruckCostValue.Text = results.TruckCost.ToString("N2");
+            lblSimDelayCostValue.Text = results.DelayCost.ToString("N2");
+            lblSimProjectDurationValue.Text = results.TotalDays.ToString("N2");
+            lblSimTotalCostValue.Text = results.TotalCost.ToString("N2");
+            lblSimDaysDelayedValue.Text = results.DelayDays.ToString("N2");
+            lblSimUtilScalersValue.Text = Math.Round(results.ScalerUtilization, 3).ToString();
+            lblSimUtilLoadersValue.Text = Math.Round(results.LoaderUtilization, 3).ToString();
+            lblSimUtilTrucksValue.Text = Math.Round(results.TruckUtilization, 3).ToString();
 
-            chart2.Series["Actual Cost"].Points.AddXY(0, results.TotalCost);
-            chart2.Series["Delay Cost"].Points.AddXY(1, results.DelayCost);
-            chart2.Series["Actual Cost"].BorderWidth = 3;
-            chart2.Series["Delay Cost"].BorderWidth = 3;
-            chart2.ChartAreas[0].AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.True;
-            chart2.ChartAreas[0].AxisX.LabelStyle.Enabled = false;
+            chartSimulationCosts.Series["Actual Cost"].Points.AddXY(0, results.TotalCost);
+            chartSimulationCosts.Series["Delay Cost"].Points.AddXY(1, results.DelayCost);
+            chartSimulationCosts.Series["Actual Cost"].BorderWidth = 3;
+            chartSimulationCosts.Series["Delay Cost"].BorderWidth = 3;
+            chartSimulationCosts.ChartAreas[0].AxisX.Enabled = System.Windows.Forms.DataVisualization.Charting.AxisEnabled.True;
+            chartSimulationCosts.ChartAreas[0].AxisX.LabelStyle.Enabled = false;
         }
+        private static SimulationRunInputs CreateDemoSimulationRunInputs() =>
+            new SimulationRunInputs
+            {
+                NumCoal = DemoDefaults.MaterialVolume,
+                NumTruck = DemoDefaults.DemoTrucks,
+                NumTruckLoad = DemoDefaults.TruckLoadVolume,
+                CostTruckPerDay = DemoDefaults.TruckCostPerDay,
+                NumLoader = DemoDefaults.DemoLoaders,
+                CostLoaderPerDay = DemoDefaults.LoaderCostPerDay,
+                NumScaler = DemoDefaults.DemoScalers,
+                CostScalerPerDay = DemoDefaults.ScalerCostPerDay,
+                ProjectDuration = DemoDefaults.ProjectDurationDays,
+                CostOfDelay = DemoDefaults.DelayCostPerDay
+            };
+
+        private void ApplySimulationRunInputsToForm(SimulationRunInputs inputs)
+        {
+            txtSimMaterialVolume.Text = inputs.NumCoal.ToString(CultureInfo.InvariantCulture);
+            txtSimTruckCount.Text = inputs.NumTruck.ToString(CultureInfo.InvariantCulture);
+            txtSimLoadPerTruck.Text = inputs.NumTruckLoad.ToString(CultureInfo.InvariantCulture);
+            txtSimTruckCostPerDay.Text = inputs.CostTruckPerDay.ToString(CultureInfo.InvariantCulture);
+            txtSimLoaderCount.Text = inputs.NumLoader.ToString(CultureInfo.InvariantCulture);
+            txtSimLoaderCostPerDay.Text = inputs.CostLoaderPerDay.ToString(CultureInfo.InvariantCulture);
+            txtSimScalerCount.Text = inputs.NumScaler.ToString(CultureInfo.InvariantCulture);
+            txtSimScalerCostPerDay.Text = inputs.CostScalerPerDay.ToString(CultureInfo.InvariantCulture);
+            txtSimProjectDuration.Text = inputs.ProjectDuration.ToString(CultureInfo.InvariantCulture);
+            txtSimDelayCostPerDay.Text = inputs.CostOfDelay.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private void ApplyDefaultDistributionsToForm()
+        {
+            loadingElements = CreateDefaultLoadingDistribution();
+            weighingElements = CreateDefaultWeighingDistribution();
+            travelingElements = CreateDefaultTravelingDistribution();
+
+            PopulateDistributionGrid(gridLoadingDistribution, loadingElements);
+            PopulateDistributionGrid(gridWeighingDistribution, weighingElements);
+            PopulateDistributionGrid(gridTravelingDistribution, travelingElements);
+
+            _viewModel.LoadingDistribution.Clear();
+            _viewModel.LoadingDistribution.AddRange(loadingElements);
+            _viewModel.WeighingDistribution.Clear();
+            _viewModel.WeighingDistribution.AddRange(weighingElements);
+            _viewModel.TravelingDistribution.Clear();
+            _viewModel.TravelingDistribution.AddRange(travelingElements);
+        }
+
         private static GaRunParameters CreateDemoGaRunParameters() =>
             new GaRunParameters
             {
-                PopulationSize = 20,
-                NumCoal = 10000,
-                NumTruckLoad = 20,
-                CostTruckPerDay = 1000,
-                CostLoaderPerDay = 2000,
-                CostScalerPerDay = 3000,
-                ProjectDuration = 120,
-                CostDelayPerDay = 10000,
-                MaxTrucks = 6,
-                MaxLoaders = 2,
-                MaxScalers = 2,
-                LastGeneration = 100,
-                MutationRate = 0.01,
+                PopulationSize = DemoDefaults.PopulationSize,
+                NumCoal = DemoDefaults.MaterialVolume,
+                NumTruckLoad = DemoDefaults.TruckLoadVolume,
+                CostTruckPerDay = DemoDefaults.TruckCostPerDay,
+                CostLoaderPerDay = DemoDefaults.LoaderCostPerDay,
+                CostScalerPerDay = DemoDefaults.ScalerCostPerDay,
+                ProjectDuration = DemoDefaults.ProjectDurationDays,
+                CostDelayPerDay = DemoDefaults.DelayCostPerDay,
+                MaxTrucks = DemoDefaults.DemoTrucks,
+                MaxLoaders = DemoDefaults.DemoLoaders,
+                MaxScalers = DemoDefaults.DemoScalers,
+                LastGeneration = DemoDefaults.Generations,
+                MutationRate = DemoDefaults.MutationRate,
                 LoadingElements = CreateDefaultLoadingDistribution(),
                 WeighingElements = CreateDefaultWeighingDistribution(),
                 TravelingElements = CreateDefaultTravelingDistribution()
@@ -564,27 +634,27 @@ namespace GeneticAlgorithm.Desktop
 
         private void ApplyGaRunParametersToForm(GaRunParameters parameters)
         {
-            txtbxPopulationNo.Text = parameters.PopulationSize.ToString(CultureInfo.InvariantCulture);
-            txtbxmaterialAlgo.Text = parameters.NumCoal.ToString(CultureInfo.InvariantCulture);
-            txtbxlodrprtrukAlgo.Text = parameters.NumTruckLoad.ToString(CultureInfo.InvariantCulture);
-            txtbxcostprtrukAlgo.Text = parameters.CostTruckPerDay.ToString(CultureInfo.InvariantCulture);
-            txtbxCostPrLoderAlgo.Text = parameters.CostLoaderPerDay.ToString(CultureInfo.InvariantCulture);
-            txtbxCostPrScalerAlgo.Text = parameters.CostScalerPerDay.ToString(CultureInfo.InvariantCulture);
-            txtbxProjectDurationAlgo.Text = parameters.ProjectDuration.ToString(CultureInfo.InvariantCulture);
-            txtbxCostOfDelayAlgo.Text = parameters.CostDelayPerDay.ToString(CultureInfo.InvariantCulture);
-            txtbxTrukNoMxAlgo.Text = parameters.MaxTrucks.ToString(CultureInfo.InvariantCulture);
-            txtbxLosderNoMxAlgo.Text = parameters.MaxLoaders.ToString(CultureInfo.InvariantCulture);
-            txtbxScalerNoMxAlgo.Text = parameters.MaxScalers.ToString(CultureInfo.InvariantCulture);
-            txtbxGenerationNo.Text = parameters.LastGeneration.ToString(CultureInfo.InvariantCulture);
-            txtbxMutationRate.Text = parameters.MutationRate.ToString(CultureInfo.InvariantCulture);
+            txtGaPopulation.Text = parameters.PopulationSize.ToString(CultureInfo.InvariantCulture);
+            txtGaMaterialVolume.Text = parameters.NumCoal.ToString(CultureInfo.InvariantCulture);
+            txtGaLoadPerTruck.Text = parameters.NumTruckLoad.ToString(CultureInfo.InvariantCulture);
+            txtGaTruckCostPerDay.Text = parameters.CostTruckPerDay.ToString(CultureInfo.InvariantCulture);
+            txtGaLoaderCostPerDay.Text = parameters.CostLoaderPerDay.ToString(CultureInfo.InvariantCulture);
+            txtGaScalerCostPerDay.Text = parameters.CostScalerPerDay.ToString(CultureInfo.InvariantCulture);
+            txtGaProjectDuration.Text = parameters.ProjectDuration.ToString(CultureInfo.InvariantCulture);
+            txtGaDelayCostPerDay.Text = parameters.CostDelayPerDay.ToString(CultureInfo.InvariantCulture);
+            txtGaMaxTrucks.Text = parameters.MaxTrucks.ToString(CultureInfo.InvariantCulture);
+            txtGaMaxLoaders.Text = parameters.MaxLoaders.ToString(CultureInfo.InvariantCulture);
+            txtGaMaxScalers.Text = parameters.MaxScalers.ToString(CultureInfo.InvariantCulture);
+            txtGaGenerations.Text = parameters.LastGeneration.ToString(CultureInfo.InvariantCulture);
+            txtGaMutationRate.Text = parameters.MutationRate.ToString(CultureInfo.InvariantCulture);
 
             loadingElements = new List<KeyValuePair<int, double>>(parameters.LoadingElements);
             weighingElements = new List<KeyValuePair<int, double>>(parameters.WeighingElements);
             travelingElements = new List<KeyValuePair<int, double>>(parameters.TravelingElements);
 
-            PopulateDistributionGrid(dataGridView1, loadingElements);
-            PopulateDistributionGrid(dataGridView2, weighingElements);
-            PopulateDistributionGrid(dataGridView3, travelingElements);
+            PopulateDistributionGrid(gridLoadingDistribution, loadingElements);
+            PopulateDistributionGrid(gridWeighingDistribution, weighingElements);
+            PopulateDistributionGrid(gridTravelingDistribution, travelingElements);
 
             _viewModel.LoadingDistribution.Clear();
             _viewModel.LoadingDistribution.AddRange(loadingElements);
@@ -610,7 +680,7 @@ namespace GeneticAlgorithm.Desktop
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void button1_Click(object sender, EventArgs e)
+        private async void btnRunGaDemo_Click(object sender, EventArgs e)
         {
             try
             {
@@ -630,51 +700,46 @@ namespace GeneticAlgorithm.Desktop
         /// <param name="sender"></param>
         /// <param name="e"></param>
 
-        private void btnClear_Click(object sender, EventArgs e)
+        private void btnClearSimulationFields_Click(object sender, EventArgs e)
         {
-            txtbxmaterialsim.Clear();
-            txtbxTrukNO.Clear();
-            txtbxlodrprtruk.Clear();
-            txtbxcostprtruk.Clear();
-            txtbxLoaderNo.Clear();
-            txtbxCostPrLoder.Clear();
-            txtbxScalerNo.Clear();
-            txtbxCostPrScaler.Clear();
-            txtbxProjectDuration.Clear(); ;
-            txtbxCostOfDelay.Clear();
+            txtSimMaterialVolume.Clear();
+            txtSimTruckCount.Clear();
+            txtSimLoadPerTruck.Clear();
+            txtSimTruckCostPerDay.Clear();
+            txtSimLoaderCount.Clear();
+            txtSimLoaderCostPerDay.Clear();
+            txtSimScalerCount.Clear();
+            txtSimScalerCostPerDay.Clear();
+            txtSimProjectDuration.Clear();
+            txtSimDelayCostPerDay.Clear();
         }
 
-        /// <summary>
-        /// this is the clear button for the data grids
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btnClearTables_Click(object sender, EventArgs e)
+        private void btnClearDistributionGrids_Click(object sender, EventArgs e)
         {
-            dataGridView1.Rows.Clear();
-            dataGridView2.Rows.Clear();
-            dataGridView3.Rows.Clear();
+            gridLoadingDistribution.Rows.Clear();
+            gridWeighingDistribution.Rows.Clear();
+            gridTravelingDistribution.Rows.Clear();
         }
         /// <summary>
         /// this is the clear button for the GA
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void button5_Click(object sender, EventArgs e)
+        private void btnClearGaFields_Click(object sender, EventArgs e)
         {
-            txtbxCostOfDelayAlgo.Clear();
-            txtbxCostPrLoderAlgo.Clear();
-            txtbxCostPrScalerAlgo.Clear();
-            txtbxcostprtrukAlgo.Clear();
-            txtbxScalerNoMxAlgo.Clear();
-            txtbxTrukNoMxAlgo.Clear();
-            txtbxPopulationNo.Clear();
-            txtbxGenerationNo.Clear();
-            txtbxMutationRate.Clear();
-            txtbxmaterialAlgo.Clear();
-            txtbxlodrprtrukAlgo.Clear();
-            txtbxLosderNoMxAlgo.Clear();
-            txtbxProjectDurationAlgo.Clear();
+            txtGaDelayCostPerDay.Clear();
+            txtGaLoaderCostPerDay.Clear();
+            txtGaScalerCostPerDay.Clear();
+            txtGaTruckCostPerDay.Clear();
+            txtGaMaxScalers.Clear();
+            txtGaMaxTrucks.Clear();
+            txtGaPopulation.Clear();
+            txtGaGenerations.Clear();
+            txtGaMutationRate.Clear();
+            txtGaMaterialVolume.Clear();
+            txtGaLoadPerTruck.Clear();
+            txtGaMaxLoaders.Clear();
+            txtGaProjectDuration.Clear();
         }
     }
 }
