@@ -11,6 +11,7 @@ namespace GeneticAlgorithm.Cli
         public static void Print()
         {
             SimulationRequest sim = DemoRequests.CreateSimulation();
+            SimulationRequest searchSim = DemoRequests.CreateSearchSimulation();
             GeneticOptimizationRequest searchOpt = DemoRequests.CreateOptimization(50);
             GeneticOptimizationRequest gaOpt = DemoRequests.CreateOptimization(50);
 
@@ -18,7 +19,8 @@ namespace GeneticAlgorithm.Cli
             CliOutput.WriteLine("Use at the truck-fleet> prompt — type commands as shown (no executable prefix).");
             CliOutput.WriteLine($"From PowerShell/cmd one-shot: prefix with {CliCatalog.ExecutableName}.");
             CliOutput.WriteLine("Always include --load-per-truck (demo default 20). Omitting it causes validation errors.");
-            CliOutput.WriteLine("Same simulation flags work for simulation and all search commands.");
+            CliOutput.WriteLine("Search commands use --max-trucks/loaders/scalers only (same as WinForms GA inputs).");
+            CliOutput.WriteLine("  --trucks / --loaders / --scalers are for the simulation command only.");
             CliOutput.WriteLine("For other search tabs, change the command name only:");
             CliOutput.WriteLine("  exhaustive-search | genetic-search | surrogate-search | dynamic-programming-search");
             CliOutput.WriteLine("  genetic-algorithm = main GA tab (stochastic fitness). genetic-search = comparison tab.");
@@ -28,27 +30,27 @@ namespace GeneticAlgorithm.Cli
 
             PrintSimulationTemplate(sim);
             CliOutput.WriteBlankLine();
-            PrintSearchTemplate("exhaustive-search", OptimizationPhaseDisplay.ExhaustiveSearch, sim, searchOpt, includeGaFlags: false);
+            PrintSearchTemplate("exhaustive-search", OptimizationPhaseDisplay.ExhaustiveSearch, searchSim, searchOpt, includeGaFlags: false);
             CliOutput.WriteBlankLine();
-            PrintGeneticAlgorithmTemplate(sim, gaOpt);
+            PrintGeneticAlgorithmTemplate(searchSim, gaOpt);
             CliOutput.WriteBlankLine();
-            PrintSearchTemplate("genetic-search", OptimizationPhaseDisplay.GeneticSearch, sim, searchOpt, includeGaFlags: true);
+            PrintSearchTemplate("genetic-search", OptimizationPhaseDisplay.GeneticSearch, searchSim, searchOpt, includeGaFlags: true);
             CliOutput.WriteBlankLine();
-            PrintSearchTemplate("surrogate-search", OptimizationPhaseDisplay.SurrogateSearch, sim, searchOpt, includeGaFlags: false);
+            PrintSearchTemplate("surrogate-search", OptimizationPhaseDisplay.SurrogateSearch, searchSim, searchOpt, includeGaFlags: false);
             CliOutput.WriteBlankLine();
-            PrintSearchTemplate("dynamic-programming-search", OptimizationPhaseDisplay.DynamicProgrammingSearch, sim, searchOpt, includeGaFlags: false);
+            PrintSearchTemplate("dynamic-programming-search", OptimizationPhaseDisplay.DynamicProgrammingSearch, searchSim, searchOpt, includeGaFlags: false);
         }
 
         private static void PrintGeneticAlgorithmTemplate(
-            SimulationRequest sim,
+            SimulationRequest searchSim,
             GeneticOptimizationRequest opt)
         {
             CliOutput.WriteSubTitle($"TEMPLATE: genetic-algorithm ({OptimizationPhaseDisplay.GeneticAlgorithmTab} tab)");
             CliOutput.WriteLine("# API equivalent: POST /api/genetic-algorithm");
             CliOutput.WriteLine("# defaults: desktop demo + 50 generations");
-            WriteWrappedCommand("genetic-algorithm", BuildOptimizationEntries(sim, opt, includeGaFlags: true));
+            WriteWrappedCommand("genetic-algorithm", BuildOptimizationEntries(searchSim, opt, includeGaFlags: true));
             CliOutput.WriteLine("# single line:");
-            CliOutput.WriteLine(BuildSingleLine("genetic-algorithm", sim, opt, includeGaFlags: true));
+            CliOutput.WriteLine(BuildSearchSingleLine("genetic-algorithm", searchSim, opt, includeGaFlags: true));
         }
 
         private static void PrintSimulationTemplate(SimulationRequest sim)
@@ -56,26 +58,26 @@ namespace GeneticAlgorithm.Cli
             CliOutput.WriteSubTitle($"TEMPLATE: simulation ({OptimizationPhaseDisplay.SimulationTab} tab)");
             CliOutput.WriteLine("# API equivalent: POST /api/simulation");
             CliOutput.WriteLine("# defaults: desktop demo (Distribution tab timings applied automatically)");
-            WriteWrappedCommand("simulation", BuildSimulationEntries(sim));
+            WriteWrappedCommand("simulation", BuildSimulationRunEntries(sim));
             CliOutput.WriteLine("# single line:");
-            CliOutput.WriteLine(BuildSingleLine("simulation", sim));
+            CliOutput.WriteLine(BuildSimulationSingleLine("simulation", sim));
         }
 
         private static void PrintSearchTemplate(
             string command,
             string tabName,
-            SimulationRequest sim,
+            SimulationRequest searchSim,
             GeneticOptimizationRequest opt,
             bool includeGaFlags)
         {
             CliOutput.WriteSubTitle($"TEMPLATE: {command} ({tabName} tab)");
             CliOutput.WriteLine($"# API equivalent: POST /api/{command}");
-            WriteWrappedCommand(command, BuildOptimizationEntries(sim, opt, includeGaFlags));
+            WriteWrappedCommand(command, BuildOptimizationEntries(searchSim, opt, includeGaFlags));
             CliOutput.WriteLine("# single line:");
-            CliOutput.WriteLine(BuildSingleLine(command, sim, opt, includeGaFlags));
+            CliOutput.WriteLine(BuildSearchSingleLine(command, searchSim, opt, includeGaFlags));
         }
 
-        private static TemplateEntry[] BuildSimulationEntries(SimulationRequest sim) =>
+        private static TemplateEntry[] BuildSimulationRunEntries(SimulationRequest sim) =>
             new[]
             {
                 Entry("simulation.coalVolume — material volume", "--coal", sim.CoalVolume),
@@ -90,12 +92,24 @@ namespace GeneticAlgorithm.Cli
                 Entry("simulation.delayCostPerDay — delay cost / day", "--delay-cost", sim.DelayCostPerDay)
             };
 
+        private static TemplateEntry[] BuildSearchContextEntries(SimulationRequest sim) =>
+            new[]
+            {
+                Entry("simulation.coalVolume — material volume", "--coal", sim.CoalVolume),
+                Entry("simulation.truckLoadVolume — load per truck (required)", "--load-per-truck", sim.TruckLoadVolume),
+                Entry("simulation.truckCostPerDay — cost per truck / day", "--truck-cost", sim.TruckCostPerDay),
+                Entry("simulation.loaderCostPerDay — cost per loader / day", "--loader-cost", sim.LoaderCostPerDay),
+                Entry("simulation.scalerCostPerDay — cost per scaler / day", "--scaler-cost", sim.ScalerCostPerDay),
+                Entry("simulation.projectDurationDays — project duration (days)", "--project-days", sim.ProjectDurationDays),
+                Entry("simulation.delayCostPerDay — delay cost / day", "--delay-cost", sim.DelayCostPerDay)
+            };
+
         private static TemplateEntry[] BuildOptimizationEntries(
-            SimulationRequest sim,
+            SimulationRequest searchSim,
             GeneticOptimizationRequest opt,
             bool includeGaFlags)
         {
-            var entries = new System.Collections.Generic.List<TemplateEntry>(BuildSimulationEntries(sim));
+            var entries = new System.Collections.Generic.List<TemplateEntry>(BuildSearchContextEntries(searchSim));
             entries.Add(Entry("search.maxTrucks — max trucks gene bound", "--max-trucks", opt.MaxTrucks));
             entries.Add(Entry("search.maxLoaders — max loaders gene bound", "--max-loaders", opt.MaxLoaders));
             entries.Add(Entry("search.maxScalers — max scalers gene bound", "--max-scalers", opt.MaxScalers));
@@ -126,44 +140,31 @@ namespace GeneticAlgorithm.Cli
             }
         }
 
-        private static string BuildSingleLine(
-            string command,
-            SimulationRequest sim,
-            GeneticOptimizationRequest opt = null,
-            bool includeGaFlags = false)
+        private static string BuildSimulationSingleLine(string command, SimulationRequest sim)
         {
             var parts = new StringBuilder();
             parts.Append(command);
-            Append(parts, "--coal", sim.CoalVolume);
-            Append(parts, "--trucks", sim.TruckCount);
-            Append(parts, "--loaders", sim.LoaderCount);
-            Append(parts, "--scalers", sim.ScalerCount);
-            Append(parts, "--load-per-truck", sim.TruckLoadVolume);
-            Append(parts, "--truck-cost", sim.TruckCostPerDay);
-            Append(parts, "--loader-cost", sim.LoaderCostPerDay);
-            Append(parts, "--scaler-cost", sim.ScalerCostPerDay);
-            Append(parts, "--project-days", sim.ProjectDurationDays);
-            Append(parts, "--delay-cost", sim.DelayCostPerDay);
-
-            if (opt != null)
-            {
-                Append(parts, "--max-trucks", opt.MaxTrucks);
-                Append(parts, "--max-loaders", opt.MaxLoaders);
-                Append(parts, "--max-scalers", opt.MaxScalers);
-
-                if (includeGaFlags)
-                {
-                    Append(parts, "--generations", opt.Generations);
-                    Append(parts, "--population", opt.PopulationSize);
-                    Append(parts, "--mutation-rate", opt.MutationRate);
-                }
-            }
-
+            AppendEntries(parts, BuildSimulationRunEntries(sim));
             return parts.ToString();
         }
 
-        private static void Append<T>(StringBuilder builder, string flag, T value) where T : IFormattable =>
-            builder.Append(' ').Append(flag).Append(' ').Append(value.ToString(null, CultureInfo.InvariantCulture));
+        private static string BuildSearchSingleLine(
+            string command,
+            SimulationRequest searchSim,
+            GeneticOptimizationRequest opt,
+            bool includeGaFlags)
+        {
+            var parts = new StringBuilder();
+            parts.Append(command);
+            AppendEntries(parts, BuildOptimizationEntries(searchSim, opt, includeGaFlags));
+            return parts.ToString();
+        }
+
+        private static void AppendEntries(StringBuilder parts, TemplateEntry[] entries)
+        {
+            foreach (TemplateEntry entry in entries)
+                parts.Append(' ').Append(entry.Flag).Append(' ').Append(entry.Value);
+        }
 
         private sealed class TemplateEntry
         {

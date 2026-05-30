@@ -88,7 +88,7 @@ internal static class ApiJsonErrors
             hint = "Copy a valid body from GET /api/sample/optimization-request or GET /api/sample/simulation-request.",
             detail,
             invalidExample = "{maxTrucks: 6}",
-            validExample = "{\"maxTrucks\": 6, \"maxLoaders\": 2, \"maxScalers\": 2, \"generations\": 20, \"simulation\": {\"coalVolume\": 10000, \"truckLoadVolume\": 20, \"truckCount\": 6, \"loaderCount\": 2, \"scalerCount\": 2}}"
+            validExample = "{\"maxTrucks\": 6, \"maxLoaders\": 2, \"maxScalers\": 2, \"generations\": 20, \"simulation\": {\"coalVolume\": 10000, \"truckLoadVolume\": 20}}"
         });
     }
 }

@@ -52,7 +52,7 @@ internal static class ApiCatalog
             Method = "GET",
             Path = "/api/sample/optimization-request",
             Tab = "Search tabs",
-            Description = "Sample JSON body for optimization POST routes.",
+            Description = "Sample JSON for search POST routes (max bounds + economics — no fixed fleet counts).",
             BrowserGetOk = true
         },
         new EndpointInfo

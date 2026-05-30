@@ -19,11 +19,11 @@ internal static class ApiLandingPage
         string simulationJson = JsonSerializer.Serialize(DemoRequests.CreateSimulation(), PrettyJson);
         string optimizationJson = JsonSerializer.Serialize(DemoRequests.CreateOptimization(20), PrettyJson);
         string minimumOptimizationJson = BuildMinimumOptimizationExample();
-        string flatOptimizationJson = simulationJson;
+        string flatSearchJson = BuildFlatSearchExample();
         string simulationCurlHttps = BuildCurlExample("https://localhost:7190", "/api/simulation", simulationJson, useInsecureFlag: true);
         string simulationCurlHttp = BuildCurlExample("http://localhost:5296", "/api/simulation", simulationJson, useInsecureFlag: false);
         string optimizationCurlHttps = BuildCurlExample("https://localhost:7190", "/api/genetic-algorithm", minimumOptimizationJson, useInsecureFlag: true);
-        string optimizationCurlHttp = BuildCurlExample("http://localhost:5296", "/api/exhaustive-search", flatOptimizationJson, useInsecureFlag: false);
+        string flatSearchCurlHttp = BuildCurlExample("http://localhost:5296", "/api/dynamic-programming-search", flatSearchJson, useInsecureFlag: false);
 
         return $@"<!DOCTYPE html>
 <html lang=""en"">
@@ -61,10 +61,10 @@ internal static class ApiLandingPage
 
   <h2>Quick start in Postman</h2>
   <ol>
-    <li>Method <strong>GET</strong> → open <code>/api/sample/simulation-request</code> or <code>/api/sample/optimization-request</code> in the browser and copy the JSON.</li>
-    <li>Method <strong>POST</strong> → paste into Postman body (raw JSON) and post to the matching route below.</li>
-    <li>Include <code>truckLoadVolume</code> (demo default <code>20</code>) and other simulation fields.</li>
-    <li>For search tabs, send simulation fields <strong>nested under</strong> <code>simulation</code> <em>or</em> <strong>flat at the root</strong> (same JSON as <code>/api/simulation</code>).</li>
+    <li><strong>Simulation:</strong> GET <code>/api/sample/simulation-request</code> — includes <code>truckCount</code>, <code>loaderCount</code>, <code>scalerCount</code> (fixed fleet).</li>
+    <li><strong>Search tabs:</strong> GET <code>/api/sample/optimization-request</code> — uses <code>maxTrucks</code>, <code>maxLoaders</code>, <code>maxScalers</code> only (same as WinForms GA inputs). Do <em>not</em> send fleet counts unless you are reusing an old body; they are ignored.</li>
+    <li>POST raw JSON to the matching route. Always include <code>truckLoadVolume</code> (demo default <code>20</code>).</li>
+    <li>Search bodies accept economics nested under <code>simulation</code> <em>or</em> flat at the root together with <code>maxTrucks</code> / <code>maxLoaders</code> / <code>maxScalers</code>.</li>
   </ol>
 
   <h2>Example: Simulation (POST /api/simulation)</h2>
@@ -77,12 +77,12 @@ internal static class ApiLandingPage
 
   <h2>Example: Search tabs (POST)</h2>
   <p>Works for <code>/api/genetic-algorithm</code>, <code>/api/exhaustive-search</code>, <code>/api/genetic-search</code>, <code>/api/surrogate-search</code>, <code>/api/dynamic-programming-search</code></p>
+  <p>Search routes optimize fleet sizes from 1..max — they do not take a fixed <code>truckCount</code> (unlike <code>/api/simulation</code>).</p>
 
-  <h3>Option A — flat JSON (same as simulation sample)</h3>
-  <p>Paste the simulation JSON above into Postman and POST to e.g. <code>/api/exhaustive-search</code>.</p>
-  <pre>{HtmlEncode(flatOptimizationJson)}</pre>
-  <h3>curl — flat body to exhaustive-search (HTTP)</h3>
-  <pre>{HtmlEncode(optimizationCurlHttp)}</pre>
+  <h3>Option A — flat JSON at root (economics + max bounds)</h3>
+  <pre>{HtmlEncode(flatSearchJson)}</pre>
+  <h3>curl — flat body to dynamic-programming-search (HTTP)</h3>
+  <pre>{HtmlEncode(flatSearchCurlHttp)}</pre>
 
   <h3>Option B — nested JSON with search options</h3>
   <pre>{HtmlEncode(minimumOptimizationJson)}</pre>
@@ -118,7 +118,7 @@ internal static class ApiLandingPage
 
     private static string BuildMinimumOptimizationExample()
     {
-        SimulationRequest sim = DemoRequests.CreateSimulation();
+        SimulationRequest sim = DemoRequests.CreateSearchSimulation();
         var request = new
         {
             generations = 20,
@@ -131,15 +131,32 @@ internal static class ApiLandingPage
             {
                 coalVolume = sim.CoalVolume,
                 truckLoadVolume = sim.TruckLoadVolume,
-                truckCount = sim.TruckCount,
-                loaderCount = sim.LoaderCount,
-                scalerCount = sim.ScalerCount,
                 truckCostPerDay = sim.TruckCostPerDay,
                 loaderCostPerDay = sim.LoaderCostPerDay,
                 scalerCostPerDay = sim.ScalerCostPerDay,
                 projectDurationDays = sim.ProjectDurationDays,
                 delayCostPerDay = sim.DelayCostPerDay
             }
+        };
+
+        return JsonSerializer.Serialize(request, PrettyJson);
+    }
+
+    private static string BuildFlatSearchExample()
+    {
+        SimulationRequest sim = DemoRequests.CreateSearchSimulation();
+        var request = new
+        {
+            maxTrucks = 6,
+            maxLoaders = 2,
+            maxScalers = 2,
+            coalVolume = sim.CoalVolume,
+            truckLoadVolume = sim.TruckLoadVolume,
+            truckCostPerDay = sim.TruckCostPerDay,
+            loaderCostPerDay = sim.LoaderCostPerDay,
+            scalerCostPerDay = sim.ScalerCostPerDay,
+            projectDurationDays = sim.ProjectDurationDays,
+            delayCostPerDay = sim.DelayCostPerDay
         };
 
         return JsonSerializer.Serialize(request, PrettyJson);

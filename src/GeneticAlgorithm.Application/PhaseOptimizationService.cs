@@ -440,9 +440,11 @@ namespace GeneticAlgorithm.Application
             if (request == null)
                 return "Request body is required.";
             if (request.Simulation == null)
-                return "simulation is required. Nest simulation fields inside \"simulation\", or send them at the root (coalVolume, truckLoadVolume, truckCount, ...). See GET /api/sample/optimization-request.";
+                return "simulation is required. Nest economics under \"simulation\", or send coalVolume, truckLoadVolume, and costs at the root. Search uses maxTrucks/maxLoaders/maxScalers — not truckCount. See GET /api/sample/optimization-request.";
 
-            string simulationError = SimulationRequestValidator.TryValidate(request.Simulation);
+            string simulationError = SimulationRequestValidator.TryValidate(
+                request.Simulation,
+                SimulationValidationKind.SearchContext);
             if (simulationError != null)
                 return simulationError;
 

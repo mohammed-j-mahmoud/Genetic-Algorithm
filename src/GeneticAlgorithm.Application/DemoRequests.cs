@@ -41,6 +41,25 @@ namespace GeneticAlgorithm.Application
                 }
             };
 
+        /// <summary>Economic/timing inputs shared by search tabs — no fixed fleet counts (same as WinForms GA inputs).</summary>
+        public static SimulationRequest CreateSearchSimulation()
+        {
+            SimulationRequest demo = CreateSimulation();
+            return new SimulationRequest
+            {
+                CoalVolume = demo.CoalVolume,
+                TruckLoadVolume = demo.TruckLoadVolume,
+                TruckCostPerDay = demo.TruckCostPerDay,
+                LoaderCostPerDay = demo.LoaderCostPerDay,
+                ScalerCostPerDay = demo.ScalerCostPerDay,
+                ProjectDurationDays = demo.ProjectDurationDays,
+                DelayCostPerDay = demo.DelayCostPerDay,
+                LoadingDistribution = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>>(demo.LoadingDistribution),
+                WeighingDistribution = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>>(demo.WeighingDistribution),
+                TravelingDistribution = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>>(demo.TravelingDistribution)
+            };
+        }
+
         public static GeneticOptimizationRequest CreateOptimization(int generations = 20) =>
             new GeneticOptimizationRequest
             {
@@ -50,7 +69,7 @@ namespace GeneticAlgorithm.Application
                 MaxScalers = 2,
                 Generations = generations,
                 MutationRate = 0.01,
-                Simulation = CreateSimulation()
+                Simulation = CreateSearchSimulation()
             };
     }
 }

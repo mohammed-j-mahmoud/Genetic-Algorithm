@@ -120,6 +120,7 @@ namespace GeneticAlgorithm.IntegrationTests
             StringAssert.Contains(html, "maxTrucks");
             StringAssert.Contains(html, "truckLoadVolume");
             StringAssert.Contains(html, "simulation");
+            StringAssert.Contains(html, "do not take a fixed");
             StringAssert.Contains(html, "/api/genetic-algorithm");
             StringAssert.Contains(html, "/api/exhaustive-search");
             StringAssert.Contains(html, "/api/endpoints");
@@ -157,6 +158,21 @@ namespace GeneticAlgorithm.IntegrationTests
             using var client = factory.CreateClient();
             var response = await client.GetAsync("/api/sample/optimization-request");
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task SampleOptimizationRequest_DoesNotIncludeFixedFleetCounts()
+        {
+            using var factory = IntegrationTestFixtures.CreateApiFactory();
+            using var client = factory.CreateClient();
+            GeneticOptimizationRequest sample =
+                await client.GetFromJsonAsync<GeneticOptimizationRequest>("/api/sample/optimization-request");
+
+            Assert.IsNotNull(sample.Simulation);
+            Assert.AreEqual(0f, sample.Simulation.TruckCount);
+            Assert.AreEqual(0f, sample.Simulation.LoaderCount);
+            Assert.AreEqual(0f, sample.Simulation.ScalerCount);
+            Assert.IsTrue(sample.MaxTrucks > 0);
         }
 
         [TestMethod]
