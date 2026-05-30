@@ -31,11 +31,11 @@ docker-compose.yml
 
 | Layer | Responsibility |
 |-------|----------------|
-| **Core** | `DumpTruckSimulation`, `DumpTruckSimulationEngine`, `GeneticOptimizer`, `DNA`, distributions |
+| **Core** | `DumpTruckSimulation`, `DumpTruckSimulationEngine`, `GeneticOptimizer` (GeneticSharp), `DNA`, distributions |
 | **Application** | `SimulationService`, `GeneticOptimizationService`, `DistributionNormalizer`, request/result models |
 | **Desktop** | `OptimizationView` (view), `OptimizationViewModel` (view model), `FormInputParser`, grids |
-| **Cli** | `sim`, `ga`, `demo` commands |
-| **Api** | `POST /api/simulation`, `POST /api/genetic-algorithm`, `GET /health` |
+| **Cli** | Interactive shell + one-shot commands — see `help` for full list |
+| **Api** | REST routes — see `GET /` or `GET /api/endpoints` |
 
 ## MVVM (desktop)
 
@@ -51,7 +51,20 @@ Binding is intentionally light (WinForms); business logic no longer lives in the
 |----------|------------|
 | **Linux / macOS / Docker** | `dotnet run --project src/GeneticAlgorithm.Cli` or Docker Compose |
 | **Windows GUI** | `dotnet run --project src/GeneticAlgorithm.Desktop` |
-| **HTTP clients** | `GeneticAlgorithm.Api` on port 8080 |
+| **HTTP clients** | `GeneticAlgorithm.Api` — `https://localhost:7190`, `http://localhost:5296`, or Docker `http://localhost:8080` |
+
+### CLI commands (match API)
+
+| Command | API |
+|---------|-----|
+| `simulation` | `POST /api/simulation` |
+| `genetic-algorithm` | `POST /api/genetic-algorithm` |
+| `exhaustive-search` | `POST /api/exhaustive-search` |
+| `genetic-search` | `POST /api/genetic-search` |
+| `surrogate-search` | `POST /api/surrogate-search` |
+| `dynamic-programming-search` | `POST /api/dynamic-programming-search` |
+
+Run with no args for interactive shell (`truck-fleet>`). Type `help` for options and templates.
 
 WinForms does **not** run on Linux; CLI/API share the same Core + Application logic.
 
@@ -69,7 +82,7 @@ docker compose -f docker-compose.yml up --build genetic-algorithm-api
 | Project | Scope |
 |---------|--------|
 | `GeneticAlgorithm.Core.Tests` | Engine, parameters, normalizer, optimizer, roulette selection, application services |
-| `GeneticAlgorithm.IntegrationTests` | API health, simulation, genetic-algorithm endpoints |
+| `GeneticAlgorithm.IntegrationTests` | API + CLI integration tests (WinForms parity) |
 
 ```bash
 dotnet test GeneticAlgorithm.sln

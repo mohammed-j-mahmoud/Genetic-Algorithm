@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>genetic-algorithm</AssemblyName>
+    <AssemblyName>truck-fleet-problem</AssemblyName>
     <RootNamespace>GeneticAlgorithm.Cli</RootNamespace>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>

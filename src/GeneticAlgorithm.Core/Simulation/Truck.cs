@@ -74,7 +74,7 @@ namespace GeneticAlgorithm.Core.Simulation
 
         /// <summary>Assigns a sampled loading duration.</summary>
 
-        public void BeginLoading(TimeDistributionSampler sampler, DiscreteDistribution distribution)
+        public void BeginLoading(IOperationDurationSampler sampler, DiscreteDistribution distribution)
 
         {
 
@@ -88,7 +88,7 @@ namespace GeneticAlgorithm.Core.Simulation
 
         /// <summary>Assigns a sampled weighing duration.</summary>
 
-        public void BeginWeighing(TimeDistributionSampler sampler, DiscreteDistribution distribution)
+        public void BeginWeighing(IOperationDurationSampler sampler, DiscreteDistribution distribution)
 
         {
 
@@ -102,7 +102,7 @@ namespace GeneticAlgorithm.Core.Simulation
 
         /// <summary>Assigns a sampled travel duration.</summary>
 
-        public void BeginTraveling(TimeDistributionSampler sampler, DiscreteDistribution distribution)
+        public void BeginTraveling(IOperationDurationSampler sampler, DiscreteDistribution distribution)
 
         {
 

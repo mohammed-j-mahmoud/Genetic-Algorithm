@@ -73,6 +73,24 @@ namespace GeneticAlgorithm.Core.Simulation
             return _durationMinutes[_durationMinutes.Length - 1];
         }
 
+        /// <summary>Weighted mean duration in minutes.</summary>
+        internal double ExpectedMinutes()
+        {
+            if (_durationMinutes.Length == 0)
+                return 0;
+
+            double expected = 0;
+            double previousCumulative = 0;
+            for (int i = 0; i < _durationMinutes.Length; i++)
+            {
+                double weight = _cumulativeProbability[i] - previousCumulative;
+                previousCumulative = _cumulativeProbability[i];
+                expected += _durationMinutes[i] * weight;
+            }
+
+            return expected;
+        }
+
         private static double[] BuildCumulative(double[] weights)
         {
             var cumulative = new double[weights.Length];

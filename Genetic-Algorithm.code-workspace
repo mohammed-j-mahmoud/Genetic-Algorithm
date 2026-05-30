@@ -1,7 +1,17 @@
 {
+	// PUBLIC REPOSITORY — see .cursor/rules/public-repo.mdc and .gitignore (secrets/local-only section)
 	"folders": [
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"files.watcherExclude": {
+			"**/.env": true,
+			"**/.env.*": true,
+			"**/local/**": true,
+			"**/private/**": true,
+			"**/notes-private/**": true
+		}
+	}
 }

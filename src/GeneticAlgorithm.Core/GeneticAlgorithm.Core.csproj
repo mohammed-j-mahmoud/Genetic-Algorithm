@@ -10,6 +10,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="GeneticAlgorithm.Core.Tests" />
+    <InternalsVisibleTo Include="GeneticAlgorithm.Application" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GeneticSharp" Version="3.1.4" />
   </ItemGroup>
 
 </Project>

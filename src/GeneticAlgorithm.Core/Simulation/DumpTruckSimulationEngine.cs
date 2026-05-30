@@ -18,7 +18,7 @@ namespace GeneticAlgorithm.Core.Simulation
 
         private readonly SimulationParameters _parameters;
 
-        private readonly TimeDistributionSampler _sampler;
+        private readonly IOperationDurationSampler _sampler;
 
         private readonly Truck[] _trucks;
 
@@ -52,7 +52,7 @@ namespace GeneticAlgorithm.Core.Simulation
 
 
 
-        public DumpTruckSimulationEngine(SimulationParameters parameters, TimeDistributionSampler sampler = null)
+        public DumpTruckSimulationEngine(SimulationParameters parameters, IOperationDurationSampler sampler = null)
 
         {
 

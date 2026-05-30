@@ -41,7 +41,7 @@ namespace GeneticAlgorithm.Core.Genetics
             double totalCost = simulation.TotalCost;
             return new FitnessSnapshot(
                 totalCost,
-                fitnessScale * coalVolume / (totalCost + 1),
+                FleetFitnessCalculator.Compute(coalVolume, fitnessScale, totalCost, simulation.TotalDays),
                 simulation.TotalDays,
                 simulation.DelayDays,
                 simulation.DelayCost,
@@ -49,5 +49,9 @@ namespace GeneticAlgorithm.Core.Genetics
                 simulation.LoaderUtilization,
                 simulation.ScalerUtilization);
         }
+
+        /// <summary>Placeholder snapshot when only surrogate fitness is known before verification.</summary>
+        internal static FitnessSnapshot FromRank(double fitness, float coalVolume, double fitnessScale) =>
+            new FitnessSnapshot(0, fitness, 0, 0, 0, 0, 0, 0);
     }
 }

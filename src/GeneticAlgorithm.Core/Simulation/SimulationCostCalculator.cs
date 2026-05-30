@@ -5,7 +5,7 @@ namespace GeneticAlgorithm.Core.Simulation
     /// </summary>
     internal static class SimulationCostCalculator
     {
-        private const float MinutesPerWorkDay = 480f;
+        internal const float MinutesPerWorkDay = 480f;
 
         /// <summary>
         /// Builds the final <see cref="SimulationResult"/> from accumulated simulation metrics.

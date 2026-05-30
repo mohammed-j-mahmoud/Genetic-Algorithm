@@ -22,7 +22,7 @@ namespace GeneticAlgorithm.Core.Tests
         public void GeneticAlgorithm_Dispose_DoesNotThrow()
         {
             using (var ga = new GeneticOptimizer.GeneticAlgorithm(4, 2, 2, 2, (_, __, ___) => DemoOutput(), 100f))
-                ga.NewGeneration();
+                ga.RunGenerations(1);
         }
 
         [TestMethod]

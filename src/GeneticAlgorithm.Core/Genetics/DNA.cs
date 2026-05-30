@@ -1,5 +1,5 @@
 using System;
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 using GeneticAlgorithm.Core.Simulation;
 
 namespace GeneticAlgorithm.Core.Genetics
@@ -12,7 +12,7 @@ namespace GeneticAlgorithm.Core.Genetics
         private readonly int[] _genes = new int[3];
 
         /// <summary>Chromosome genes: [trucks, loaders, scalers] (read-only view).</summary>
-        public System.Collections.Generic.IReadOnlyList<int> Genes => Array.AsReadOnly(_genes);
+        public IReadOnlyList<int> Genes => Array.AsReadOnly(_genes);
 
         /// <summary>Total project cost from last evaluation.</summary>
         public double TotalCost { get; private set; }
@@ -41,99 +41,26 @@ namespace GeneticAlgorithm.Core.Genetics
         /// <summary>Scale utilization from last evaluation.</summary>
         public float utilScaler { get; private set; }
 
-        private readonly GeneticAlgorithmConfig _config;
-        private readonly SimulationFitnessCache _fitnessCache;
-        private readonly Random _random;
-
-        internal DNA(GeneticAlgorithmConfig config, SimulationFitnessCache fitnessCache, Random random)
+        internal DNA()
         {
-            _config = config;
-            _fitnessCache = fitnessCache;
-            _random = random;
-            numCoal = config.NumCoal;
         }
 
-        /// <summary>
-        /// Creates a randomly initialized and evaluated individual.
-        /// </summary>
-        internal static DNA CreateRandom(GeneticAlgorithmConfig config, SimulationFitnessCache cache, Random random)
+        internal void CopyFrom(FleetChromosome source, float coalVolume)
         {
-            var dna = new DNA(config, cache, random);
-            dna.RandomizeGenes();
-            dna.Evaluate();
-            return dna;
+            _genes[0] = source.Trucks;
+            _genes[1] = source.Loaders;
+            _genes[2] = source.Scalers;
+            numCoal = coalVolume;
+            ApplySnapshot(source.LastSnapshot);
         }
 
-        /// <summary>
-        /// Re-rolls all genes uniformly within configured bounds.
-        /// </summary>
-        internal void RandomizeGenes()
+        internal void CopyFrom(int trucks, int loaders, int scalers, FitnessSnapshot snapshot, float coalVolume)
         {
-            _genes[0] = _random.Next(1, _config.MaxTrucks + 1);
-            _genes[1] = _random.Next(1, _config.MaxLoaders + 1);
-            _genes[2] = _random.Next(1, _config.MaxScalers + 1);
-        }
-
-        /// <summary>
-        /// Loads metrics from the fitness cache for the current genes.
-        /// </summary>
-        public void Evaluate()
-        {
-            ApplySnapshot(_fitnessCache.GetOrEvaluate(_genes[0], _genes[1], _genes[2]));
-        }
-
-        /// <summary>
-        /// Uniform crossover into an existing offspring slot (no allocation).
-        /// </summary>
-        public void CrossOverInto(DNA parent2, DNA offspring)
-        {
-            if (offspring == null)
-                throw new ArgumentNullException(nameof(offspring));
-
-            offspring.ReproduceWith(this, parent2);
-        }
-
-        /// <summary>
-        /// Uniform crossover and optional mutation in-place (reuses an existing offspring slot).
-        /// </summary>
-        internal void ReproduceWith(DNA parent1, DNA parent2)
-        {
-            ReproduceUniform(parent1, parent2);
-            ApplyMutations();
-            // Crossover always changes genes; fitness must be refreshed every offspring.
-            Evaluate();
-        }
-
-        /// <summary>
-        /// Applies gene mutation with configured rate, then re-evaluates fitness.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Mutate()
-        {
-            ApplyMutations();
-            Evaluate();
-        }
-
-        /// <summary>
-        /// Mutates each gene independently with probability <see cref="GeneticAlgorithmConfig.MutationRate"/>.
-        /// </summary>
-        private void ApplyMutations()
-        {
-            if (_random.NextDouble() < _config.MutationRate)
-                _genes[0] = _random.Next(1, _config.MaxTrucks + 1);
-
-            if (_random.NextDouble() < _config.MutationRate)
-                _genes[1] = _random.Next(1, _config.MaxLoaders + 1);
-
-            if (_random.NextDouble() < _config.MutationRate)
-                _genes[2] = _random.Next(1, _config.MaxScalers + 1);
-        }
-
-        private void ReproduceUniform(DNA parent1, DNA parent2)
-        {
-            _genes[0] = _random.NextDouble() < 0.5 ? parent1._genes[0] : parent2._genes[0];
-            _genes[1] = _random.NextDouble() < 0.5 ? parent1._genes[1] : parent2._genes[1];
-            _genes[2] = _random.NextDouble() < 0.5 ? parent1._genes[2] : parent2._genes[2];
+            _genes[0] = trucks;
+            _genes[1] = loaders;
+            _genes[2] = scalers;
+            numCoal = coalVolume;
+            ApplySnapshot(snapshot);
         }
 
         private void ApplySnapshot(FitnessSnapshot snapshot)
@@ -146,22 +73,6 @@ namespace GeneticAlgorithm.Core.Genetics
             utilTruck = snapshot.UtilTruck;
             utilLoader = snapshot.UtilLoader;
             utilScaler = snapshot.UtilScaler;
-        }
-
-        /// <summary>Copies genes and evaluated metrics from another individual (for best-gene tracking).</summary>
-        internal void CopyStateFrom(DNA source)
-        {
-            _genes[0] = source._genes[0];
-            _genes[1] = source._genes[1];
-            _genes[2] = source._genes[2];
-            TotalCost = source.TotalCost;
-            Fitness = source.Fitness;
-            TotalDays = source.TotalDays;
-            DaysofDelay = source.DaysofDelay;
-            CostofDelay = source.CostofDelay;
-            utilTruck = source.utilTruck;
-            utilLoader = source.utilLoader;
-            utilScaler = source.utilScaler;
         }
 
         /// <inheritdoc />

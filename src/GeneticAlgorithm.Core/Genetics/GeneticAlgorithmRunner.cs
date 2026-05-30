@@ -1,138 +1,154 @@
 using System;
+using System.Threading;
+using GeneticSharp;
 using GeneticAlgorithm.Core.Simulation;
+using SharpGeneticAlgorithm = GeneticSharp.GeneticAlgorithm;
 
 namespace GeneticAlgorithm.Core.Genetics
 {
     /// <summary>
-    /// Runs the generational loop: selection, crossover, mutation, and best-individual tracking.
+    /// Runs GeneticSharp with simulation-backed fitness and maps results to <see cref="DNA"/>.
     /// </summary>
     internal sealed class GeneticAlgorithmRunner : IDisposable
     {
         private readonly GeneticAlgorithmConfig _config;
         private readonly SimulationFitnessCache _fitnessCache;
-        private readonly Random _selectionRandom = new Random();
-        private readonly Random _geneRandom = new Random();
-
-        private DNA[] _population;
-        private DNA[] _offspringBuffer;
+        private readonly SharpGeneticAlgorithm _geneticAlgorithm;
         private readonly DNA _bestGeneRecord;
-        private double[] _cumulativeFitness;
-        private double _fitnessSum;
+        private DNA[] _populationSnapshot = Array.Empty<DNA>();
+        private DNA _bestOfCurrentGeneration = new DNA();
+        private bool _disposed;
+        private bool _hasRun;
 
-        /// <summary>Current generation individuals.</summary>
-        public DNA[] Population => _population;
+        public DNA[] Population => _populationSnapshot;
 
-        /// <summary>Best individual found so far.</summary>
         public DNA BestGene { get; private set; }
 
-        /// <summary>Generation index when <see cref="BestGene"/> was last improved.</summary>
         public int BestGeneGeneration { get; private set; }
 
-        /// <summary>Current generation number (1-based).</summary>
         public int Generation { get; private set; }
 
-        /// <summary>Best individual in the current generation.</summary>
-        public DNA BestOfCurrentGeneration { get; private set; }
+        public DNA BestOfCurrentGeneration => _bestOfCurrentGeneration;
 
-        /// <summary>Simulation result cache used for fitness evaluation.</summary>
         internal SimulationFitnessCache FitnessCache => _fitnessCache;
 
-        /// <summary>
-        /// Initializes the population and prewarms the fitness cache.
-        /// </summary>
-        public GeneticAlgorithmRunner(GeneticAlgorithmConfig config, Func<float, float, float, DumpTruckSimulation.SimulationOutput> simulate)
+        public GeneticAlgorithmRunner(
+            GeneticAlgorithmConfig config,
+            Func<float, float, float, DumpTruckSimulation.SimulationOutput> simulate,
+            bool prewarmCache = true)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             if (simulate == null)
                 throw new ArgumentNullException(nameof(simulate));
 
-            Generation = 1;
-
             _fitnessCache = new SimulationFitnessCache(
                 (trucks, loaders, scalers) =>
-                    FitnessSnapshot.FromSimulation(simulate(trucks, loaders, scalers), config.NumCoal, config.FitnessScale),
+                    FitnessSnapshot.FromSimulation(
+                        simulate(trucks, loaders, scalers),
+                        config.NumCoal,
+                        config.FitnessScale),
                 config.MaxTrucks,
                 config.MaxLoaders,
                 config.MaxScalers);
 
-            _fitnessCache.Prewarm();
+            if (prewarmCache)
+                _fitnessCache.Prewarm();
 
-            int size = config.PopulationSize;
-            _population = new DNA[size];
-            _offspringBuffer = new DNA[size];
-            _cumulativeFitness = new double[size];
+            var adamChromosome = new FleetChromosome(config.MaxTrucks, config.MaxLoaders, config.MaxScalers);
+            var fitness = new FleetSimulationFitness(_fitnessCache);
+            var population = new TplPopulation(config.PopulationSize, config.PopulationSize, adamChromosome);
 
-            _bestGeneRecord = new DNA(_config, _fitnessCache, _geneRandom);
+            _geneticAlgorithm = new SharpGeneticAlgorithm(
+                population,
+                fitness,
+                new EliteSelection(),
+                new UniformCrossover(),
+                new FleetGeneMutation(config.MutationRate))
+            {
+                MutationProbability = 1.0f // GeneticSharp gate is always open; per-gene rate is FleetGeneMutation._mutationRate.
+            };
+
+            _bestGeneRecord = new DNA();
             BestGene = _bestGeneRecord;
-
-            for (int i = 0; i < size; i++)
-            {
-                _population[i] = DNA.CreateRandom(_config, _fitnessCache, _geneRandom);
-                _offspringBuffer[i] = new DNA(_config, _fitnessCache, _geneRandom);
-            }
-
-            RecalculatePopulationStatistics();
+            BestGeneGeneration = 1;
+            Generation = 0;
         }
 
-        /// <summary>
-        /// Produces the next generation in <see cref="_offspringBuffer"/> and swaps buffers (no population array reallocation).
-        /// </summary>
-        public void NewGeneration()
+        public void RunGenerations(
+            int generations,
+            Action<int, double> onGenerationCompleted = null,
+            CancellationToken cancellationToken = default)
         {
-            int size = _population.Length;
+            if (_hasRun)
+                throw new InvalidOperationException("This genetic algorithm runner can only be started once.");
+            if (generations <= 0 || generations > SimulationParameters.MaxParameterValue)
+                throw new ArgumentOutOfRangeException(nameof(generations), $"Generations must be between 1 and {SimulationParameters.MaxParameterValue:N0}.");
 
-            for (int i = 0; i < size; i++)
+            _hasRun = true;
+
+            _geneticAlgorithm.GenerationRan += (_, __) =>
             {
-                int parentIndex1 = RouletteWheelSelector.SelectIndex(_cumulativeFitness, _fitnessSum, size, _selectionRandom);
-                int parentIndex2 = RouletteWheelSelector.SelectIndex(_cumulativeFitness, _fitnessSum, size, _selectionRandom);
+                Generation = _geneticAlgorithm.Population.GenerationsNumber;
+                RefreshPopulationSnapshot();
+                RefreshBestOfCurrentGeneration();
+                TrackBestIndividual();
 
-                DNA offspring = _offspringBuffer[i];
-                offspring.ReproduceWith(_population[parentIndex1], _population[parentIndex2]);
-            }
+                onGenerationCompleted?.Invoke(Generation, _bestOfCurrentGeneration.Fitness);
 
-            SwapPopulationBuffers();
-            RecalculatePopulationStatistics();
-            Generation++;
+                if (cancellationToken.IsCancellationRequested)
+                    _geneticAlgorithm.Stop();
+            };
+
+            _geneticAlgorithm.Termination = new GenerationNumberTermination(generations);
+            _geneticAlgorithm.Start();
         }
 
-        private void RecalculatePopulationStatistics()
-        {
-            int size = _population.Length;
-            double sum = 0;
-            BestOfCurrentGeneration = _population[0];
-
-            for (int i = 0; i < size; i++)
-            {
-                DNA individual = _population[i];
-                sum += individual.Fitness;
-                _cumulativeFitness[i] = sum;
-
-                if (individual.Fitness > BestGene.Fitness)
-                {
-                    _bestGeneRecord.CopyStateFrom(individual);
-                    BestGeneGeneration = Generation;
-                }
-
-                if (individual.Fitness > BestOfCurrentGeneration.Fitness)
-                    BestOfCurrentGeneration = individual;
-            }
-
-            _fitnessSum = sum;
-        }
-
-        private void SwapPopulationBuffers()
-        {
-            DNA[] temp = _population;
-            _population = _offspringBuffer;
-            _offspringBuffer = temp;
-        }
-
-        /// <inheritdoc />
         public void Dispose()
         {
-            _population = null;
-            _offspringBuffer = null;
-            _cumulativeFitness = null;
+            if (_disposed)
+                return;
+
+            _populationSnapshot = Array.Empty<DNA>();
+            _disposed = true;
+        }
+
+        private void TrackBestIndividual()
+        {
+            FleetChromosome best = (FleetChromosome)_geneticAlgorithm.Population.BestChromosome;
+            if (!best.Fitness.HasValue)
+                return;
+
+            if (best.Fitness.Value > _bestGeneRecord.Fitness)
+            {
+                _bestGeneRecord.CopyFrom(best, _config.NumCoal);
+                BestGeneGeneration = Generation;
+            }
+        }
+
+        private void RefreshBestOfCurrentGeneration()
+        {
+            FleetChromosome currentBest = (FleetChromosome)_geneticAlgorithm.Population.CurrentGeneration.BestChromosome;
+            if (!currentBest.Fitness.HasValue)
+                return;
+
+            _bestOfCurrentGeneration.CopyFrom(currentBest, _config.NumCoal);
+        }
+
+        private void RefreshPopulationSnapshot()
+        {
+            var chromosomes = _geneticAlgorithm.Population.CurrentGeneration.Chromosomes;
+            var snapshot = new DNA[chromosomes.Count];
+
+            for (int i = 0; i < chromosomes.Count; i++)
+            {
+                var fleet = (FleetChromosome)chromosomes[i];
+                var dna = new DNA();
+                if (fleet.Fitness.HasValue)
+                    dna.CopyFrom(fleet, _config.NumCoal);
+                snapshot[i] = dna;
+            }
+
+            _populationSnapshot = snapshot;
         }
     }
 }

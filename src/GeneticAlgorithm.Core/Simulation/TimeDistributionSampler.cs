@@ -5,7 +5,7 @@ namespace GeneticAlgorithm.Core.Simulation
     /// <summary>
     /// Samples operation durations from precomputed <see cref="DiscreteDistribution"/> instances.
     /// </summary>
-    public sealed class TimeDistributionSampler
+    public sealed class TimeDistributionSampler : IOperationDurationSampler
     {
         private readonly Random _random;
 

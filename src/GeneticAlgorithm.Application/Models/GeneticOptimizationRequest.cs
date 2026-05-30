@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using GeneticAlgorithm.Application.Json;
 
 namespace GeneticAlgorithm.Application.Models
 {
+    [JsonConverter(typeof(GeneticOptimizationRequestJsonConverter))]
     public sealed class GeneticOptimizationRequest
     {
         public int PopulationSize { get; set; } = 20;
@@ -10,6 +13,6 @@ namespace GeneticAlgorithm.Application.Models
         public int MaxScalers { get; set; } = 2;
         public int Generations { get; set; } = 100;
         public double MutationRate { get; set; } = 0.01;
-        public SimulationRequest Simulation { get; set; } = new SimulationRequest();
+        public SimulationRequest Simulation { get; set; }
     }
 }

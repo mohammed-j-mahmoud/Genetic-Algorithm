@@ -34,8 +34,8 @@ Note: The app is **WinForms**, not WPF. The same MVVM separation was applied:
 
 ## Cross-platform & Docker
 
-- **CLI:** `dotnet run --project src/GeneticAlgorithm.Cli -- ga 20`
-- **API:** `dotnet run --project src/GeneticAlgorithm.Api`
+- **CLI:** `dotnet run --project src/GeneticAlgorithm.Cli` — interactive shell; type `help` for all commands (matches API routes)
+- **API:** `dotnet run --project src/GeneticAlgorithm.Api` — `https://localhost:7190/` or `http://localhost:5296/` (Docker: `8080`)
 - **`docker/Dockerfile`** — CLI image
 - **`docker/Dockerfile.api`** — API image
 - **`docker-compose.yml`** — both services

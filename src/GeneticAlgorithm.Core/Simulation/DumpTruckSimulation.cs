@@ -39,6 +39,44 @@ namespace GeneticAlgorithm.Core.Simulation
             IReadOnlyList<KeyValuePair<int, double>> weighingDistribution,
             IReadOnlyList<KeyValuePair<int, double>> travelingDistribution)
         {
+            return Run(
+                coalVolume,
+                truckCount,
+                truckLoadVolume,
+                truckCostPerDay,
+                loaderCount,
+                loaderCostPerDay,
+                scalerCount,
+                scalerCostPerDay,
+                projectDurationDays,
+                delayCostPerDay,
+                loadingDistribution,
+                weighingDistribution,
+                travelingDistribution,
+                SimulationEvaluationMode.Stochastic,
+                simulationSeed: 0);
+        }
+
+        /// <summary>
+        /// Runs a simulation using stochastic (seeded) or expected-time durations.
+        /// </summary>
+        public static SimulationOutput Run(
+            float coalVolume,
+            float truckCount,
+            float truckLoadVolume,
+            float truckCostPerDay,
+            float loaderCount,
+            float loaderCostPerDay,
+            float scalerCount,
+            float scalerCostPerDay,
+            float projectDurationDays,
+            float delayCostPerDay,
+            IReadOnlyList<KeyValuePair<int, double>> loadingDistribution,
+            IReadOnlyList<KeyValuePair<int, double>> weighingDistribution,
+            IReadOnlyList<KeyValuePair<int, double>> travelingDistribution,
+            SimulationEvaluationMode mode,
+            int simulationSeed)
+        {
             var parameters = new SimulationParameters(
                 coalVolume,
                 truckCount,
@@ -54,7 +92,8 @@ namespace GeneticAlgorithm.Core.Simulation
                 weighingDistribution,
                 travelingDistribution);
 
-            SimulationResult result = new DumpTruckSimulationEngine(parameters).Run();
+            IOperationDurationSampler sampler = OperationDurationSamplerFactory.Create(mode, simulationSeed);
+            SimulationResult result = new DumpTruckSimulationEngine(parameters, sampler).Run();
             return ToOutput(result);
         }
 
