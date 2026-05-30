@@ -31,7 +31,7 @@ docker-compose.yml
 
 | Layer | Responsibility |
 |-------|----------------|
-| **Core** | `DumpTruckSimulation`, `DumpTruckSimulationEngine`, `GeneticOptimizer`, `DNA`, distributions |
+| **Core** | `DumpTruckSimulation`, `DumpTruckSimulationEngine`, `GeneticOptimizer` (GeneticSharp), `DNA`, distributions |
 | **Application** | `SimulationService`, `GeneticOptimizationService`, `DistributionNormalizer`, request/result models |
 | **Desktop** | `OptimizationView` (view), `OptimizationViewModel` (view model), `FormInputParser`, grids |
 | **Cli** | `sim`, `ga`, `demo` commands |

@@ -6,17 +6,20 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using GeneticAlgorithm.Application;
 using GeneticAlgorithm.Application.Models;
 using GeneticAlgorithm.Core.Simulation;
+using GeneticAlgorithm.Desktop.Views;
 
 namespace GeneticAlgorithm.Desktop
 {
     public partial class OptimizationView : Form
     {
-        private const int ChartUpdateInterval = 5;
+        private const int ChartUpdateInterval = 1;
+        private const string GaFitnessChartSeries = "BestThisGeneration";
 
         private sealed class GaGenerationReport
         {
@@ -55,6 +58,7 @@ namespace GeneticAlgorithm.Desktop
         public OptimizationView()
         {
             InitializeComponent();
+            InitializePhaseTabs();
         }
         /// <summary>
         /// this button is made to rn the GA
@@ -155,30 +159,10 @@ namespace GeneticAlgorithm.Desktop
 
         private static OptimizationRunResult RunGeneticAlgorithmCore(
             GaRunParameters parameters,
-            IProgress<GaGenerationReport> progress)
+            IProgress<GaGenerationReport> progress,
+            CancellationToken cancellationToken)
         {
-            var request = new GeneticOptimizationRequest
-            {
-                PopulationSize = parameters.PopulationSize,
-                MaxTrucks = parameters.MaxTrucks,
-                MaxLoaders = parameters.MaxLoaders,
-                MaxScalers = parameters.MaxScalers,
-                Generations = parameters.LastGeneration,
-                MutationRate = parameters.MutationRate,
-                Simulation = new SimulationRequest
-                {
-                    CoalVolume = parameters.NumCoal,
-                    TruckLoadVolume = parameters.NumTruckLoad,
-                    TruckCostPerDay = parameters.CostTruckPerDay,
-                    LoaderCostPerDay = parameters.CostLoaderPerDay,
-                    ScalerCostPerDay = parameters.CostScalerPerDay,
-                    ProjectDurationDays = parameters.ProjectDuration,
-                    DelayCostPerDay = parameters.CostDelayPerDay,
-                    LoadingDistribution = parameters.LoadingElements,
-                    WeighingDistribution = parameters.WeighingElements,
-                    TravelingDistribution = parameters.TravelingElements
-                }
-            };
+            GeneticOptimizationRequest request = ToOptimizationRequest(parameters);
 
             return new GeneticOptimizationService().Run(request, new Progress<GenerationProgress>(p =>
             {
@@ -193,7 +177,7 @@ namespace GeneticAlgorithm.Desktop
                     Fitness = p.BestFitness,
                     UpdateChart = updateChart
                 });
-            }));
+            }), cancellationToken);
         }
 
         private async Task RunGeneticAlgorithmAsync(GaRunParameters parameters)
@@ -201,45 +185,70 @@ namespace GeneticAlgorithm.Desktop
             if (_gaRunning)
                 return;
 
-            _gaRunning = true;
-            SetGeneticAlgorithmControlsEnabled(false);
-
-            chart1.Series["Series1"].Points.Clear();
-            progressBar1.Visible = true;
-            progressBar1.Minimum = 1;
-            progressBar1.Maximum = parameters.LastGeneration;
-            progressBar1.Value = 1;
-
-            var progress = new Progress<GaGenerationReport>(report =>
-            {
-                if (IsDisposed)
-                    return;
-
-                int generation = Math.Min(report.Generation, progressBar1.Maximum);
-                progressBar1.Value = Math.Max(progressBar1.Minimum, generation);
-
-                if (report.UpdateChart)
-                    chart1.Series["Series1"].Points.AddXY(report.Generation, report.Fitness);
-            });
-
             try
             {
+                _gaRunning = true;
+                SetGeneticAlgorithmControlsEnabled(false);
+                SetRunStopButtonsEnabled(running: true, geneticTab: true, simulationTab: false);
+                _runCancellation?.Cancel();
+                _runCancellation?.Dispose();
+                _runCancellation = new CancellationTokenSource();
+                CancellationToken cancellationToken = _runCancellation.Token;
+
+                chart1.Series[GaFitnessChartSeries].Points.Clear();
+                progressBar1.Visible = true;
+                progressBar1.Minimum = 1;
+                progressBar1.Maximum = parameters.LastGeneration;
+                progressBar1.Value = 1;
+
+                var progress = new Progress<GaGenerationReport>(report =>
+                {
+                    if (IsDisposed)
+                        return;
+
+                    int generation = Math.Min(report.Generation, progressBar1.Maximum);
+                    progressBar1.Value = Math.Max(progressBar1.Minimum, generation);
+
+                    if (report.UpdateChart)
+                        chart1.Series[GaFitnessChartSeries].Points.AddXY(report.Generation, report.Fitness);
+                });
+
                 OptimizationRunResult results = await Task.Run(
-                    () => RunGeneticAlgorithmCore(parameters, progress)).ConfigureAwait(true);
+                    () => RunGeneticAlgorithmCore(parameters, progress, cancellationToken),
+                    cancellationToken).ConfigureAwait(true);
 
                 progressBar1.Value = progressBar1.Maximum;
                 ApplyGeneticAlgorithmResults(results);
-                MessageBox.Show("GA is Done ", "Message Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ApplyGaComparisonResult(results);
+                string completion = results.StoppedEarly
+                    ? "GA stopped early. Best result so far is shown."
+                    : "GA is Done ";
+                MessageBox.Show(completion, "Message Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Run cancelled.", "Message Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
             finally
             {
+                progressBar1.Visible = false;
                 SetGeneticAlgorithmControlsEnabled(true);
+                SetRunStopButtonsEnabled(running: false, geneticTab: false, simulationTab: false);
+                _runCancellation?.Dispose();
+                _runCancellation = null;
                 _gaRunning = false;
             }
         }
 
         private void ApplyGeneticAlgorithmResults(OptimizationRunResult results)
         {
+            if (results?.BestChromosome == null)
+                return;
+
             lblTruckNoAlgo.Text = results.BestChromosome.Genes[0].ToString();
             lblLoaderNoAlgo.Text = results.BestChromosome.Genes[1].ToString();
             lblScalerNoAlgo.Text = results.BestChromosome.Genes[2].ToString();
@@ -256,18 +265,14 @@ namespace GeneticAlgorithm.Desktop
         {
             btnRunGenetic.Enabled = enabled;
             button1.Enabled = enabled;
+            btnSim.Enabled = enabled;
             UseWaitCursor = !enabled;
         }
 
         private void OptimizationView_Load(object sender, EventArgs e)
         {
             picbxalgo.Enabled = true;
-            dataGridView1.Columns[0].Name = "Time";
-            dataGridView2.Columns[0].Name = "Time";
-            dataGridView3.Columns[0].Name = "Time";
-            dataGridView1.Columns[1].Name = "Probability";
-            dataGridView2.Columns[1].Name = "Probability";
-            dataGridView3.Columns[1].Name = "Probability";
+            ApplyDistributionColumnHeaders();
          }
 
         private void button6_Click(object sender, EventArgs e)
@@ -364,13 +369,23 @@ namespace GeneticAlgorithm.Desktop
         /// <param name="e"></param>
         private async void button7_Click(object sender, EventArgs e)
         {
+            if (_simRunning)
+                return;
+
             try
             {
                 if (!TryReadSimulationInputs(out SimulationRunInputs inputs))
                     return;
 
-                btnSim.Enabled = false;
+                _simRunning = true;
+                btnClear.Enabled = false;
+                SetGeneticAlgorithmControlsEnabled(false);
+                SetRunStopButtonsEnabled(running: true, geneticTab: false, simulationTab: true);
                 UseWaitCursor = true;
+                _runCancellation?.Cancel();
+                _runCancellation?.Dispose();
+                _runCancellation = new CancellationTokenSource();
+                CancellationToken cancellationToken = _runCancellation.Token;
 
                 SimulationResults = await Task.Run(() => new SimulationService().Run(new SimulationRequest
                 {
@@ -387,10 +402,17 @@ namespace GeneticAlgorithm.Desktop
                     LoadingDistribution = loadingElements,
                     WeighingDistribution = weighingElements,
                     TravelingDistribution = travelingElements
-                })).ConfigureAwait(true);
+                }), cancellationToken).ConfigureAwait(true);
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
 
                 ApplySimulationResults(SimulationResults);
                 MessageBox.Show("Simulation is Done ", "Message Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Simulation cancelled.", "Message Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -398,8 +420,13 @@ namespace GeneticAlgorithm.Desktop
             }
             finally
             {
-                btnSim.Enabled = true;
+                btnClear.Enabled = true;
+                SetGeneticAlgorithmControlsEnabled(true);
+                SetRunStopButtonsEnabled(running: false, geneticTab: false, simulationTab: false);
+                _runCancellation?.Dispose();
+                _runCancellation = null;
                 UseWaitCursor = false;
+                _simRunning = false;
             }
         }
 

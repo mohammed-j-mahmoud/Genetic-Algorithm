@@ -364,3 +364,22 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# --- Public repo: secrets and local-only files (never commit) ---
+.cursor/
+.env
+.env.*
+!.env.example
+**/secrets.json
+**/credentials.json
+**/appsettings.Local.json
+**/appsettings.*.local.json
+*.local.json
+*.pem
+*.key
+id_rsa*
+local/
+private/
+notes-private/
+*.secret
+*.secrets

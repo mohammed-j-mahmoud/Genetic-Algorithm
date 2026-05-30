@@ -200,7 +200,7 @@ namespace GeneticAlgorithm.Desktop
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(876, 535);
+            this.tabPage1.Size = new System.Drawing.Size(1312, 752);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Genetic Algorithm";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -495,14 +495,14 @@ namespace GeneticAlgorithm.Desktop
             this.groupBox1.Controls.Add(this.label15);
             this.groupBox1.Location = new System.Drawing.Point(6, 191);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(407, 248);
+            this.groupBox1.Size = new System.Drawing.Size(407, 300);
             this.groupBox1.TabIndex = 62;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Inputs";
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(211, 204);
+            this.button5.Location = new System.Drawing.Point(220, 252);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(182, 33);
             this.button5.TabIndex = 15;
@@ -764,13 +764,13 @@ namespace GeneticAlgorithm.Desktop
             series1.ChartArea = "ChartArea1";
             series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
             series1.Legend = "Legend1";
-            series1.Name = "Series1";
+            series1.Name = "BestThisGeneration";
             this.chart1.Series.Add(series1);
             this.chart1.Size = new System.Drawing.Size(412, 277);
             this.chart1.TabIndex = 60;
             this.chart1.Text = "Plot of Fitness vs Generation Number";
             title1.Name = "Title1";
-            title1.Text = "Fitness Value vs Generation Number";
+            title1.Text = "Best Fitness in Each Generation";
             title2.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Left;
             title2.Name = "Title2";
             title2.Text = "Fitness";
@@ -804,7 +804,7 @@ namespace GeneticAlgorithm.Desktop
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(876, 535);
+            this.tabPage3.Size = new System.Drawing.Size(1312, 752);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Simulation";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -1531,13 +1531,14 @@ namespace GeneticAlgorithm.Desktop
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(884, 561);
+            this.ClientSize = new System.Drawing.Size(1320, 780);
             this.Controls.Add(this.tabControl1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
+            this.MaximizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(1200, 680);
             this.Name = "OptimizationView";
-            this.Text = "Optimization Project";
+            this.Text = "Truck Fleet Problem";
             this.Load += new System.EventHandler(this.OptimizationView_Load);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();

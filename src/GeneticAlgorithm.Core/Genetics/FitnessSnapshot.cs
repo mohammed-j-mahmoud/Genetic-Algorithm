@@ -49,5 +49,9 @@ namespace GeneticAlgorithm.Core.Genetics
                 simulation.LoaderUtilization,
                 simulation.ScalerUtilization);
         }
+
+        /// <summary>Placeholder snapshot when only surrogate fitness is known before verification.</summary>
+        internal static FitnessSnapshot FromRank(double fitness, float coalVolume, double fitnessScale) =>
+            new FitnessSnapshot(0, fitness, 0, 0, 0, 0, 0, 0);
     }
 }

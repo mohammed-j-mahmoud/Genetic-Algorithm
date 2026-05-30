@@ -1,29 +1,50 @@
 using System;
+using System.Threading;
 using GeneticAlgorithm.Application.Models;
 using GeneticAlgorithm.Core.Genetics;
 using GeneticAlgorithm.Core.Simulation;
 
 namespace GeneticAlgorithm.Application
 {
-
     public sealed class GeneticOptimizationService
     {
-        private readonly SimulationService _simulationService = new SimulationService();
+        private readonly SimulationEvaluator _evaluator = new SimulationEvaluator();
 
+        /// <summary>
+        /// Runs GA with seeded stochastic simulation (reproducible cache per fleet triple).
+        /// </summary>
         public OptimizationRunResult Run(
             GeneticOptimizationRequest request,
-            IProgress<GenerationProgress> progress = null)
+            IProgress<GenerationProgress> progress = null,
+            CancellationToken cancellationToken = default) =>
+            Run(request, SimulationEvaluationMode.Stochastic, Environment.TickCount, progress, prewarmCache: true, cancellationToken);
+
+        /// <summary>
+        /// Runs GA using the specified simulation evaluation mode and optimization run seed.
+        /// </summary>
+        public OptimizationRunResult Run(
+            GeneticOptimizationRequest request,
+            SimulationEvaluationMode fitnessMode,
+            int runSeed,
+            IProgress<GenerationProgress> progress = null,
+            bool prewarmCache = true,
+            CancellationToken cancellationToken = default)
         {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+            if (request.Simulation == null)
+                throw new ArgumentNullException(nameof(request.Simulation));
+
             SimulationRequest sim = request.Simulation;
 
-            DumpTruckSimulation.SimulationOutput Fitness(float trucks, float loaders, float scalers)
-            {
-                var sub = CloneSimulation(sim);
-                sub.TruckCount = trucks;
-                sub.LoaderCount = loaders;
-                sub.ScalerCount = scalers;
-                return _simulationService.Run(sub);
-            }
+            DumpTruckSimulation.SimulationOutput Fitness(float trucks, float loaders, float scalers) =>
+                _evaluator.Evaluate(
+                    sim,
+                    (int)trucks,
+                    (int)loaders,
+                    (int)scalers,
+                    fitnessMode,
+                    runSeed);
 
             using (var algorithm = new GeneticOptimizer.GeneticAlgorithm(
                 request.PopulationSize,
@@ -32,44 +53,30 @@ namespace GeneticAlgorithm.Application
                 request.MaxScalers,
                 Fitness,
                 sim.CoalVolume,
-                request.MutationRate))
+                request.MutationRate,
+                prewarmCache))
             {
-                for (int generation = 1; generation <= request.Generations; generation++)
+                algorithm.RunGenerations(request.Generations, (generation, bestFitness) =>
                 {
                     progress?.Report(new GenerationProgress
                     {
                         Generation = generation,
-                        BestFitness = algorithm.BestGene.Fitness
+                        BestFitness = bestFitness
                     });
-
-                    if (generation < request.Generations)
-                        algorithm.NewGeneration();
-                }
+                }, cancellationToken);
 
                 return new OptimizationRunResult
                 {
                     BestGeneration = algorithm.BestGeneGeneration,
-                    BestChromosome = algorithm.BestGene
+                    GenerationsCompleted = algorithm.Generation,
+                    StoppedEarly = cancellationToken.IsCancellationRequested,
+                    BestChromosome = algorithm.BestGene,
+                    FinalPopulation = algorithm.Population,
+                    SimulationCalls = algorithm.SimulationCalls,
+                    CacheHits = algorithm.CacheHits,
+                    CombinationsEvaluated = request.MaxTrucks * request.MaxLoaders * request.MaxScalers
                 };
             }
         }
-
-        private static SimulationRequest CloneSimulation(SimulationRequest source) =>
-            new SimulationRequest
-            {
-                CoalVolume = source.CoalVolume,
-                TruckCount = source.TruckCount,
-                TruckLoadVolume = source.TruckLoadVolume,
-                TruckCostPerDay = source.TruckCostPerDay,
-                LoaderCount = source.LoaderCount,
-                LoaderCostPerDay = source.LoaderCostPerDay,
-                ScalerCount = source.ScalerCount,
-                ScalerCostPerDay = source.ScalerCostPerDay,
-                ProjectDurationDays = source.ProjectDurationDays,
-                DelayCostPerDay = source.DelayCostPerDay,
-                LoadingDistribution = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>>(source.LoadingDistribution),
-                WeighingDistribution = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>>(source.WeighingDistribution),
-                TravelingDistribution = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, double>>(source.TravelingDistribution)
-            };
     }
 }
